@@ -20,6 +20,8 @@ include_directories(
 add_executable(scene
 		FinalProject/scene.cpp
         FinalProject/render/shader.cpp
+		FinalProject/animation.cpp
+		FinalProject/animation.h
 )
 target_link_libraries(scene
 	${OPENGL_LIBRARY}
