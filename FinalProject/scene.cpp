@@ -22,20 +22,22 @@ static int windowWidth = 1024;
 static int windowHeight = 768;
 
 static void key_callback(GLFWwindow *window, int key, int scancode, int action, int mode);
+void mouse_button_callback(GLFWwindow* window, int button, int action, int mods);
+void cursor_position_callback(GLFWwindow* window, double xpos, double ypos);
 static GLuint LoadTextureTileBox(const char *texture_file_path);
 
 // Camera
-static glm::vec3 eye_center;
+static glm::vec3 eye_center(0, 10, 100);
 static glm::vec3 lookat(0, 0, 0);
 static glm::vec3 up(0, 1, 0);
 
 static float FoV = 45.0f;
-static float zNear = 100.0f;
-static float zFar = 1500.0f;
+glm::float32 zNear = 0.1f;
+glm::float32 zFar = 1000.0f;
 
-static float viewAzimuth = 0.f;
-static float viewPolar = 0.f;
-static float viewDistance = 300.0f;
+static bool mousePressed = false;
+static double lastMouseX, lastMouseY;
+static float sensitivity = 0.1f;
 
 // Lighting  
 static glm::vec3 lightIntensity(5e6f, 5e6f, 5e6f);
@@ -44,6 +46,103 @@ static glm::vec3 lightPosition(-275.0f, 500.0f, 800.0f);
 // Animation 
 static bool playAnimation = false;
 static float playbackSpeed = 2.0f;
+
+struct AxisXYZ {
+    // A structure for visualizing the global 3D coordinate system
+
+	GLfloat vertex_buffer_data[18] = {
+		// X axis
+		0.0, 0.0f, 0.0f,
+		100.0f, 0.0f, 0.0f,
+
+		// Y axis
+		0.0f, 0.0f, 0.0f,
+		0.0f, 100.0f, 0.0f,
+
+		// Z axis
+		0.0f, 0.0f, 0.0f,
+		0.0f, 0.0f, 100.0f,
+	};
+
+	GLfloat color_buffer_data[18] = {
+		// X, red
+		1.0f, 0.0f, 0.0f,
+		1.0f, 0.0f, 0.0f,
+
+		// Y, green
+		0.0f, 1.0f, 0.0f,
+		0.0f, 1.0f, 0.0f,
+
+		// Z, blue
+		0.0f, 0.0f, 1.0f,
+		0.0f, 0.0f, 1.0f,
+	};
+
+	// OpenGL buffers
+	GLuint vertexArrayID;
+	GLuint vertexBufferID;
+	GLuint colorBufferID;
+
+	// Shader variable IDs
+	GLuint mvpMatrixID;
+	GLuint programID;
+
+	void initialize() {
+		// Create a vertex array object
+		glGenVertexArrays(1, &vertexArrayID);
+		glBindVertexArray(vertexArrayID);
+
+		// Create a vertex buffer object to store the vertex data
+		glGenBuffers(1, &vertexBufferID);
+		glBindBuffer(GL_ARRAY_BUFFER, vertexBufferID);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(vertex_buffer_data), vertex_buffer_data, GL_STATIC_DRAW);
+
+		// Create a vertex buffer object to store the color data
+		glGenBuffers(1, &colorBufferID);
+		glBindBuffer(GL_ARRAY_BUFFER, colorBufferID);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(color_buffer_data), color_buffer_data, GL_STATIC_DRAW);
+
+		// Create and compile our GLSL program from the shaders
+		programID = LoadShadersFromFile("../FinalProject/shader/box.vert", "../FinalProject/shader/box.frag");
+		if (programID == 0)
+		{
+			std::cerr << "Failed to load shaders." << std::endl;
+		}
+
+		// Get a handle for our "MVP" uniform
+		mvpMatrixID = glGetUniformLocation(programID, "MVP");
+	}
+
+	void render(glm::mat4 cameraMatrix) {
+		glUseProgram(programID);
+
+		glEnableVertexAttribArray(0);
+		glBindBuffer(GL_ARRAY_BUFFER, vertexBufferID);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
+
+		glEnableVertexAttribArray(1);
+		glBindBuffer(GL_ARRAY_BUFFER, colorBufferID);
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, 0);
+
+		// Set model-view-projection matrix
+		glm::mat4 mvp = cameraMatrix;
+		glUniformMatrix4fv(mvpMatrixID, 1, GL_FALSE, &mvp[0][0]);
+
+        // Draw the lines
+        glDrawArrays(GL_LINES, 0, 6);
+
+		glDisableVertexAttribArray(0);
+		glDisableVertexAttribArray(1);
+	}
+
+	void cleanup() {
+		glDeleteBuffers(1, &vertexBufferID);
+		glDeleteBuffers(1, &colorBufferID);
+		glDeleteVertexArrays(1, &vertexArrayID);
+		glDeleteProgram(programID);
+	}
+};
+
 
 struct Building {
 	glm::vec3 position;		// Position of the box
@@ -315,6 +414,7 @@ struct Building {
 	}
 };
 
+
 int main(void)
 {
 	// Initialise GLFW
@@ -343,6 +443,12 @@ int main(void)
 	glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);
 	glfwSetKeyCallback(window, key_callback);
 
+	glfwSetMouseButtonCallback(window, mouse_button_callback);
+	glfwSetCursorPosCallback(window, cursor_position_callback);
+	// hide cursor
+	//glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
+
 	// Load OpenGL functions, gladLoadGL returns the loaded version, 0 on error.
 	int version = gladLoadGL(glfwGetProcAddress);
 	if (version == 0)
@@ -362,17 +468,17 @@ int main(void)
 	bot.initialize();
 
 	Building building;
-	building.initialize(glm::vec3(0.f,-1000.f,0.f), glm::vec3(1000.f,1000.0f,1000.0f));
+	building.initialize(glm::vec3(0.f,-1100.f,0.f), glm::vec3(1000.f,1000.0f,1000.0f));
+
+	AxisXYZ axis;
+	axis.initialize();
 
 	// Camera setup
-	eye_center.y = viewDistance * cos(viewPolar);
-	eye_center.x = viewDistance * cos(viewAzimuth);
-	eye_center.z = viewDistance * sin(viewAzimuth);
+	// eye_center.y = viewDistance * cos(viewPolar);
+	// eye_center.x = viewDistance * cos(viewAzimuth);
+	// eye_center.z = viewDistance * sin(viewAzimuth);
 
 	glm::mat4 viewMatrix, projectionMatrix;
-	glm::float32 FoV = 45;
-	glm::float32 zNear = 0.1f;
-	glm::float32 zFar = 1000.0f;
 	projectionMatrix = glm::perspective(glm::radians(FoV), (float)windowWidth / windowHeight, zNear, zFar);
 
 	// Time and frame rate tracking
@@ -399,6 +505,7 @@ int main(void)
 		// Rendering
 		viewMatrix = glm::lookAt(eye_center, lookat, up);
 		glm::mat4 vp = projectionMatrix * viewMatrix;
+		axis.render(vp);
 		glUseProgram(building.programID);
 		building.render(vp);
 		glUseProgram(bot.animationProgramID);
@@ -426,6 +533,7 @@ int main(void)
 	while (!glfwWindowShouldClose(window));
 
 	// Clean up
+	axis.cleanup();
 	bot.cleanup();
 	building.cleanup();
 
@@ -437,63 +545,99 @@ int main(void)
 
 static void key_callback(GLFWwindow *window, int key, int scancode, int action, int mode)
 {
-	if (key == GLFW_KEY_R && action == GLFW_PRESS)
-	{
-		viewAzimuth = 0.f;
-		viewPolar = 0.f;
-		eye_center.y = viewDistance * cos(viewPolar);
-		eye_center.x = viewDistance * cos(viewAzimuth);
-		eye_center.z = viewDistance * sin(viewAzimuth);
-		std::cout << "Reset." << std::endl;
+	const float moveSpeed = 5.0f;
+
+	if (key == GLFW_KEY_UP && (action == GLFW_REPEAT || action == GLFW_PRESS)) {
+		eye_center.y += moveSpeed;
+		lookat.y += moveSpeed;
 	}
 
-	if (key == GLFW_KEY_UP && (action == GLFW_REPEAT || action == GLFW_PRESS))
-	{
-		viewPolar -= 0.1f;
-		eye_center.y = viewDistance * cos(viewPolar);
+	if (key == GLFW_KEY_DOWN && (action == GLFW_REPEAT || action == GLFW_PRESS)) {
+		eye_center.y -= moveSpeed;
+		lookat.y -= moveSpeed;
 	}
 
-	if (key == GLFW_KEY_DOWN && (action == GLFW_REPEAT || action == GLFW_PRESS))
-	{
-		viewPolar += 0.1f;
-		eye_center.y = viewDistance * cos(viewPolar);
+	if (key == GLFW_KEY_W && (action == GLFW_REPEAT || action == GLFW_PRESS)) {
+		glm::vec3 viewDirection = glm::normalize(lookat - eye_center);
+		eye_center += viewDirection * moveSpeed;
+		lookat += viewDirection * moveSpeed;
 	}
 
-	if (key == GLFW_KEY_LEFT && (action == GLFW_REPEAT || action == GLFW_PRESS))
-	{
-		viewAzimuth -= 0.1f;
-		eye_center.x = viewDistance * cos(viewAzimuth);
-		eye_center.z = viewDistance * sin(viewAzimuth);
+	if (key == GLFW_KEY_S && (action == GLFW_REPEAT || action == GLFW_PRESS)) {
+		glm::vec3 viewDirection = glm::normalize(lookat - eye_center);
+		eye_center -= viewDirection * moveSpeed;
+		lookat -= viewDirection * moveSpeed;
 	}
 
-	if (key == GLFW_KEY_RIGHT && (action == GLFW_REPEAT || action == GLFW_PRESS))
-	{
-		viewAzimuth += 0.1f;
-		eye_center.x = viewDistance * cos(viewAzimuth);
-		eye_center.z = viewDistance * sin(viewAzimuth);
+	if (key == GLFW_KEY_A && (action == GLFW_REPEAT || action == GLFW_PRESS)) {
+		glm::vec3 direction = glm::normalize(glm::cross(glm::normalize(lookat - eye_center), up));
+		eye_center -= direction * moveSpeed;
+		lookat -= direction * moveSpeed;
 	}
 
-	if (key == GLFW_KEY_W && action == GLFW_PRESS)
-	{
-		playbackSpeed += 1.0f;
-		if (playbackSpeed > 10.0f)
-			playbackSpeed = 10.0f;
-	}
-
-	if (key == GLFW_KEY_S && action == GLFW_PRESS)
-	{
-		playbackSpeed -= 1.0f;
-		if (playbackSpeed < 1.0f) {
-			playbackSpeed = 1.0f;
-		}
+	if (key == GLFW_KEY_D && (action == GLFW_REPEAT || action == GLFW_PRESS)) {
+		glm::vec3 direction = glm::normalize(glm::cross(glm::normalize(lookat - eye_center), up));
+		eye_center += direction * moveSpeed;
+		lookat += direction * moveSpeed;
 	}
 
 	if (key == GLFW_KEY_SPACE && action == GLFW_PRESS) {
 		playAnimation = !playAnimation;
 	}
 
-	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
+	if (key == GLFW_KEY_LEFT && action == GLFW_PRESS) {
+		playbackSpeed += 1.0f;
+		if (playbackSpeed > 10.0f)
+			playbackSpeed = 10.0f;
+	}
+
+	if (key == GLFW_KEY_RIGHT && action == GLFW_PRESS) {
+		playbackSpeed -= 1.0f;
+		if (playbackSpeed < 1.0f)
+			playbackSpeed = 1.0f;
+	}
+
+	if (key == GLFW_KEY_R && action == GLFW_PRESS) {
+		eye_center = glm::vec3(100.0f, 100.0f, 100.0f);
+		lookat =  glm::vec3(0,0,0);
+		std::cout << "Camera Reset." << std::endl;
+	}
+
+	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
 		glfwSetWindowShouldClose(window, GL_TRUE);
+	}
+}
+
+void mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {
+	if (button == GLFW_MOUSE_BUTTON_LEFT) {
+		if (action == GLFW_PRESS) {
+			mousePressed = true;
+			glfwGetCursorPos(window, &lastMouseX, &lastMouseY);
+		} else if (action == GLFW_RELEASE) {
+			mousePressed = false;
+		}
+	}
+}
+
+// could use glm/gtc/quaternion to avoid gimbal lock, but did so and rotation was disorientating, maybe implemented wrong
+void cursor_position_callback(GLFWwindow* window, double xpos, double ypos) {
+	if (!mousePressed) return;
+
+	double deltaX = xpos - lastMouseX;
+	double deltaY = ypos - lastMouseY;
+	lastMouseX = xpos;
+	lastMouseY = ypos;
+
+	glm::vec3 viewDirection = glm::normalize(lookat - eye_center);
+
+	glm::mat4 horizontalRotation = glm::rotate(glm::mat4(1.0f), glm::radians((float)deltaX * sensitivity), up);
+	viewDirection = glm::vec3(horizontalRotation * glm::vec4(viewDirection, 0.0f));
+
+	glm::vec3 rightDirection = glm::normalize(glm::cross(viewDirection, up));
+	glm::mat4 verticalRotation = glm::rotate(glm::mat4(1.0f), glm::radians((float)deltaY * sensitivity), rightDirection);
+	viewDirection = glm::vec3(verticalRotation * glm::vec4(viewDirection, 0.0f));
+
+	lookat = eye_center + viewDirection;
 }
 
 static GLuint LoadTextureTileBox(const char *texture_file_path) {
