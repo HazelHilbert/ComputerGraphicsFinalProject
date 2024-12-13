@@ -36,7 +36,7 @@ struct MyBot {
     GLuint jointMatricesID;
     GLuint lightPositionID;
     GLuint lightIntensityID;
-    GLuint programID;
+    GLuint animationProgramID;
 
     tinygltf::Model model;
     std::vector<PrimitiveObject> primitiveObjects;

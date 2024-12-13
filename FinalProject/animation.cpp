@@ -336,17 +336,17 @@ void MyBot::initialize() {
 	animationObjects = prepareAnimation(model);
 
 	// Create and compile our GLSL program from the shaders
-	programID = LoadShadersFromFile("../FinalProject/shader/bot.vert", "../FinalProject/shader/bot.frag");
-	if (programID == 0)
+	animationProgramID = LoadShadersFromFile("../FinalProject/shader/bot.vert", "../FinalProject/shader/bot.frag");
+	if (animationProgramID == 0)
 	{
 		std::cerr << "Failed to load shaders." << std::endl;
 	}
 
 	// Get a handle for GLSL variables
-	mvpMatrixID = glGetUniformLocation(programID, "MVP");
-	jointMatricesID = glGetUniformLocation(programID, "jointMatrices");
-	lightPositionID = glGetUniformLocation(programID, "lightPosition");
-	lightIntensityID = glGetUniformLocation(programID, "lightIntensity");
+	mvpMatrixID = glGetUniformLocation(animationProgramID, "MVP");
+	jointMatricesID = glGetUniformLocation(animationProgramID, "jointMatrices");
+	lightPositionID = glGetUniformLocation(animationProgramID, "lightPosition");
+	lightIntensityID = glGetUniformLocation(animationProgramID, "lightIntensity");
 }
 
 void MyBot::bindMesh(std::vector<PrimitiveObject> &primitiveObjects,
@@ -494,7 +494,7 @@ void MyBot::drawModel(const std::vector<PrimitiveObject>& primitiveObjects,
 }
 
 void MyBot::render(glm::mat4 cameraMatrix, glm::vec3 lightPosition, glm::vec3 lightIntensity) {
-	glUseProgram(programID);
+	glUseProgram(animationProgramID);
 
 	// Set camera
 	glm::mat4 mvp = cameraMatrix;
@@ -518,5 +518,5 @@ void MyBot::render(glm::mat4 cameraMatrix, glm::vec3 lightPosition, glm::vec3 li
 }
 
 void MyBot::cleanup() {
-	glDeleteProgram(programID);
+	glDeleteProgram(animationProgramID);
 }
