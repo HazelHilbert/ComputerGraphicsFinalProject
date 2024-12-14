@@ -22,6 +22,10 @@ add_executable(scene
         FinalProject/render/shader.cpp
 		FinalProject/animation.cpp
 		FinalProject/animation.h
+		FinalProject/terrain.cpp
+		FinalProject/terrain.h
+		FinalProject/utils.cpp
+		FinalProject/utils.h
 )
 target_link_libraries(scene
 	${OPENGL_LIBRARY}
