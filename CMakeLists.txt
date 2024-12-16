@@ -26,6 +26,8 @@ add_executable(scene
 		FinalProject/terrain.h
 		FinalProject/utils.cpp
 		FinalProject/utils.h
+		FinalProject/sky.cpp
+		FinalProject/sky.h
 )
 target_link_libraries(scene
 	${OPENGL_LIBRARY}

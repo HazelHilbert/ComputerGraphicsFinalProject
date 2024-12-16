@@ -1,5 +1,6 @@
 #include "animation.h"
 #include "terrain.h"
+#include "sky.h"
 
 #include <glad/gl.h>
 #include <GLFW/glfw3.h>
@@ -25,13 +26,13 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 void cursor_position_callback(GLFWwindow* window, double xpos, double ypos);
 
 // Camera
-static glm::vec3 eye_center(0, 10, 100);
+static glm::vec3 eye_center(0, 100, 100);
 static glm::vec3 lookat(0, 0, 0);
 static glm::vec3 up(0, 1, 0);
 
 static float FoV = 45.0f;
 glm::float32 zNear = 0.1f;
-glm::float32 zFar = 1000.0f;
+glm::float32 zFar = 10000.0f;
 
 static bool mousePressed = false;
 static double lastMouseX, lastMouseY;
@@ -194,10 +195,13 @@ int main(void)
 	bot.initialize();
 
 	Terrain building;
-	building.initialize(glm::vec3(0.f,-1100.f,0.f), glm::vec3(1000.f,1000.0f,1000.0f));
+	building.initialize(glm::vec3(0.f,-1000.f,0.f), glm::vec3(1000.f,1000.0f,1000.0f));
 
 	AxisXYZ axis;
 	axis.initialize();
+
+	Sky sky;
+	sky.initialize(glm::vec3(0,80,0), glm::vec3(100.f,100.0f,100.0f));
 
 	// Camera setup
 	// eye_center.y = viewDistance * cos(viewPolar);
@@ -231,6 +235,13 @@ int main(void)
 		// Rendering
 		viewMatrix = glm::lookAt(eye_center, lookat, up);
 		glm::mat4 vp = projectionMatrix * viewMatrix;
+
+		glm::mat4 vp_skybox = projectionMatrix * glm::mat4(glm::mat3(viewMatrix));
+
+		glDepthMask(GL_FALSE);
+		sky.render(vp_skybox);
+		glDepthMask(GL_TRUE);
+
 		axis.render(vp);
 		glUseProgram(building.programID);
 		building.render(vp);
@@ -262,6 +273,7 @@ int main(void)
 	axis.cleanup();
 	bot.cleanup();
 	building.cleanup();
+	sky.cleanup();
 
 	// Close OpenGL window and terminate GLFW
 	glfwTerminate();
