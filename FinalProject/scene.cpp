@@ -1,6 +1,7 @@
 #include "animation.h"
 #include "terrain.h"
 #include "sky.h"
+#include "box.h"
 
 #include <glad/gl.h>
 #include <GLFW/glfw3.h>
@@ -194,7 +195,7 @@ int main(void)
 	MyBot bot;
 	bot.initialize();
 
-	Terrain building;
+	Box building;
 	building.initialize(glm::vec3(0.f,-1000.f,0.f), glm::vec3(1000.f,1000.0f,1000.0f));
 
 	AxisXYZ axis;

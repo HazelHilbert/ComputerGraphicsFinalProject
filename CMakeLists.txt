@@ -28,6 +28,8 @@ add_executable(scene
 		FinalProject/utils.h
 		FinalProject/sky.cpp
 		FinalProject/sky.h
+		FinalProject/box.cpp
+		FinalProject/box.h
 )
 target_link_libraries(scene
 	${OPENGL_LIBRARY}
