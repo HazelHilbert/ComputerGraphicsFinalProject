@@ -71,4 +71,4 @@ struct MyBot {
     void cleanup();
 };
 
-#endif //ANIMATION_H
+#endif

@@ -191,12 +191,15 @@ int main(void)
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
 
-	// Our 3D character
+	// -------------------------------------
+	// Initialize models
+	// -------------------------------------
+
 	MyBot bot;
 	bot.initialize();
 
 	Box building;
-	building.initialize(glm::vec3(0.f,-1000.f,0.f), glm::vec3(1000.f,1000.0f,1000.0f));
+	building.initialize(glm::vec3(10.f,10.f,10.f), glm::vec3(10.f,10.0f,10.0f));
 
 	AxisXYZ axis;
 	axis.initialize();
@@ -204,10 +207,11 @@ int main(void)
 	Sky sky;
 	sky.initialize(glm::vec3(0,80,0), glm::vec3(100.f,100.0f,100.0f));
 
-	// Camera setup
-	// eye_center.y = viewDistance * cos(viewPolar);
-	// eye_center.x = viewDistance * cos(viewAzimuth);
-	// eye_center.z = viewDistance * sin(viewAzimuth);
+	Terrain terrain;
+	terrain.initialize(1000,1000,20);
+
+	// -------------------------------------
+	// -------------------------------------
 
 	glm::mat4 viewMatrix, projectionMatrix;
 	projectionMatrix = glm::perspective(glm::radians(FoV), (float)windowWidth / windowHeight, zNear, zFar);
@@ -240,14 +244,13 @@ int main(void)
 		glm::mat4 vp_skybox = projectionMatrix * glm::mat4(glm::mat3(viewMatrix));
 
 		glDepthMask(GL_FALSE);
-		sky.render(vp_skybox);
+		//sky.render(vp_skybox);
 		glDepthMask(GL_TRUE);
 
 		axis.render(vp);
-		glUseProgram(building.programID);
 		building.render(vp);
-		glUseProgram(bot.animationProgramID);
 		//bot.render(vp, lightPosition, lightIntensity);
+		terrain.render(vp);
 
 		// FPS tracking 
 		// Count number of frames over a few seconds and take average
@@ -275,6 +278,7 @@ int main(void)
 	bot.cleanup();
 	building.cleanup();
 	sky.cleanup();
+	terrain.cleanup();
 
 	// Close OpenGL window and terminate GLFW
 	glfwTerminate();

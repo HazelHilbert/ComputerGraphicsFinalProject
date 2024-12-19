@@ -13,6 +13,7 @@ include_directories(
 	external/glfw-3.1.2/include/
 	external/glm-0.9.7.1/
 	external/glad-opengl-3.3/include/
+	external/stb/
 	external/tinygltf-2.9.3/
         FinalProject/
 )
@@ -30,6 +31,7 @@ add_executable(scene
 		FinalProject/sky.h
 		FinalProject/box.cpp
 		FinalProject/box.h
+		external/stb/stb_perlin.h
 )
 target_link_libraries(scene
 	${OPENGL_LIBRARY}
