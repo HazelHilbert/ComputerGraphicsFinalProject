@@ -39,9 +39,21 @@ static bool mousePressed = false;
 static double lastMouseX, lastMouseY;
 static float sensitivity = 0.1f;
 
-// Lighting  
+// Lighting control
+const glm::vec3 wave500(0.0f, 255.0f, 146.0f);
+const glm::vec3 wave600(255.0f, 190.0f, 0.0f);
+const glm::vec3 wave700(205.0f, 0.0f, 0.0f);
+//static glm::vec3 lightIntensity = 5.0f * (8.0f * wave500 + 15.6f * wave600 + 18.4f * wave700);
 static glm::vec3 lightIntensity(5e6f, 5e6f, 5e6f);
-static glm::vec3 lightPosition(-275.0f, 500.0f, 800.0f);
+
+static glm::vec3 lightDirection = glm::normalize(glm::vec3(-275.0f, -500.0f, -275.0f)); // Example direction
+
+// Shadow mapping
+static glm::vec3 lightUp(0.0f, 1.0f, 0.0f);
+static int shadowMapWidth = 1024;
+static int shadowMapHeight = 1024;
+
+glm::mat4 lightSpaceMatrix;
 
 // Animation 
 static bool playAnimation = false;
@@ -205,16 +217,30 @@ int main(void)
 	axis.initialize();
 
 	Sky sky;
-	sky.initialize(glm::vec3(0,80,0), glm::vec3(100.f,100.0f,100.0f));
+	sky.initialize(glm::vec3(0,0,0), glm::vec3(100.f,100.0f,100.0f));
 
 	Terrain terrain;
-	terrain.initialize(1000,1000,20);
+	terrain.initialize(1000,1000,30);
 
 	// -------------------------------------
 	// -------------------------------------
 
 	glm::mat4 viewMatrix, projectionMatrix;
 	projectionMatrix = glm::perspective(glm::radians(FoV), (float)windowWidth / windowHeight, zNear, zFar);
+
+
+	// Define light's orthographic projection parameters
+	float near_plane = 1.0f, far_plane = 1000.0f;
+	glm::mat4 lightProjection = glm::ortho(-500.0f, 500.0f, -500.0f, 500.0f, near_plane, far_plane);
+
+	// Define light's view matrix
+	// Position the light source based on lightDirection
+	glm::vec3 lightPos = -lightDirection * 1000.0f; // Position the light far away in the opposite direction
+	glm::mat4 lightView = glm::lookAt(lightPos, glm::vec3(0.0f), lightUp);
+
+	// Combine to get lightSpaceMatrix
+	glm::mat4 lightSpaceMatrix = lightProjection * lightView;
+
 
 	// Time and frame rate tracking
 	static double lastTime = glfwGetTime();
@@ -244,13 +270,13 @@ int main(void)
 		glm::mat4 vp_skybox = projectionMatrix * glm::mat4(glm::mat3(viewMatrix));
 
 		glDepthMask(GL_FALSE);
-		//sky.render(vp_skybox);
+		sky.render(vp_skybox);
 		glDepthMask(GL_TRUE);
 
 		axis.render(vp);
 		building.render(vp);
 		//bot.render(vp, lightPosition, lightIntensity);
-		terrain.render(vp);
+		terrain.render(vp, lightSpaceMatrix, lightDirection, lightIntensity);
 
 		// FPS tracking 
 		// Count number of frames over a few seconds and take average
