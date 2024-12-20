@@ -6,10 +6,32 @@
 #include <utils.h>
 
 #define STB_PERLIN_IMPLEMENTATION
+#include <stb_image_write.h>
+
 #include "stb_perlin.h"
 
-static int shadowMapWidth = 1024;
-static int shadowMapHeight = 1024;
+static int shadowMapWidth = 2024;
+static int shadowMapHeight = 2024;
+
+bool saveDepth = true;
+
+static void saveDepthTexture(GLuint fbo, std::string filename) {
+    int width = shadowMapWidth;
+    int height = shadowMapHeight;
+
+    int channels = 3;
+
+    std::vector<float> depth(width * height);
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+    glReadBuffer(GL_DEPTH_COMPONENT);
+    glReadPixels(0, 0, width, height, GL_DEPTH_COMPONENT, GL_FLOAT, depth.data());
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    std::vector<unsigned char> img(width * height * 3);
+    for (int i = 0; i < width * height; ++i) img[3*i] = img[3*i+1] = img[3*i+2] = depth[i] * 255;
+
+    stbi_write_png(filename.c_str(), width, height, channels, img.data(), width * channels);
+}
 
 void Terrain::initialize(int width, int depth, float maxHeight) {
     float halfWidth = width / 2.0f;
@@ -126,7 +148,7 @@ void Terrain::initialize(int width, int depth, float maxHeight) {
     glGenBuffers(1, &normalBufferID);
     glBindBuffer(GL_ARRAY_BUFFER, normalBufferID);
     glBufferData(GL_ARRAY_BUFFER, normals.size() * sizeof(glm::vec3), normals.data(), GL_STATIC_DRAW);
-/*
+
     // Create a fbo
     glGenFramebuffers(1, &fbo);
     glBindFramebuffer(GL_FRAMEBUFFER, fbo);
@@ -136,55 +158,62 @@ void Terrain::initialize(int width, int depth, float maxHeight) {
     glBindTexture(GL_TEXTURE_2D, depthTexture);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE);
+
     glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, shadowMapWidth, shadowMapHeight, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthTexture, 0);
+    glDrawBuffer(GL_NONE);
+    glReadBuffer(GL_NONE);
 
     if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
     {
         std::cout << "Failed to create framebuffer" << std::endl;
     }
-*/
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+
     programID = LoadShadersFromFile("../FinalProject/shader/terrain.vert", "../FinalProject/shader/terrain.frag");
     if (programID == 0) {
         std::cerr << "Failed to load shaders." << std::endl;
     }
-/*
+
     depthProgramID = LoadShadersFromFile("../FinalProject/shader/depth.vert", "../FinalProject/shader/depth.frag");
     if (depthProgramID == 0)
     {
         std::cerr << "Failed to load depth shaders." << std::endl;
     }
-*/
+
     std::string filePath = "../FinalProject/assets/textures/grass.jpg";
     textureID = LoadTextureTileBox(filePath.c_str());
     textureSamplerID = glGetUniformLocation(programID,"textureSampler");
 
     // Get a handle for our "MVP" uniform
     mvpMatrixID = glGetUniformLocation(programID, "MVP");
+    modelMatrixIDRender = glGetUniformLocation(programID, "Model");
+    modelMatrixIDDepth = glGetUniformLocation(depthProgramID, "Model");
+    if (lightSpaceMatrixIDRender == -1) {
+        std::cerr << "Could not find uniform 'model' in depth shader." << std::endl;
+    }
 
     lightIntensityID = glGetUniformLocation(programID, "lightIntensity");
     lightDirectionID = glGetUniformLocation(programID, "lightDirection");
 
-  //  lightSpaceMatrixID = glGetUniformLocation(programID, "lightSpaceMatrixRender");
-    //lightSpaceMatrixID = glGetUniformLocation(depthProgramID, "lightSpaceMatrix");
+    lightSpaceMatrixIDRender = glGetUniformLocation(programID, "lightSpaceMatrixRender");
+    if (lightSpaceMatrixIDRender == -1) {
+        std::cerr << "Could not find uniform 'lightSpaceMatrix' in depth shader." << std::endl;
+    }
+    lightSpaceMatrixIDDepth = glGetUniformLocation(depthProgramID, "lightSpaceMatrix");
+    if (lightSpaceMatrixIDDepth == -1) {
+        std::cerr << "Could not find uniform 'lightSpaceMatrix' in depth shader." << std::endl;
+    }
+
+    depthTextureSamplerID = glGetUniformLocation(programID, "depthTextureSampler");
 }
 
 void Terrain::render(glm::mat4 vp, glm::mat4 lightSpaceMatrix, glm::vec3 lightDirection, glm::vec3 lightIntensity) {
-    glUseProgram(programID);
-
-    glBindVertexArray(vertexArrayID);
-
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, textureID);
-    glUniform1i(textureSamplerID, 0);
-
-    glm::mat4 model = glm::mat4(1.0f);
-    glm::mat4 mvp = vp * model;
-    glUniformMatrix4fv(mvpMatrixID, 1, GL_FALSE, &mvp[0][0]);
-
-    glUniform3fv(lightIntensityID, 1, &lightIntensity[0]);
-    glUniform3fv(lightDirectionID, 1, &lightDirection[0]);
-
     glEnableVertexAttribArray(0); // Positions
     glBindBuffer(GL_ARRAY_BUFFER, vertexBufferID);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
@@ -198,33 +227,61 @@ void Terrain::render(glm::mat4 vp, glm::mat4 lightSpaceMatrix, glm::vec3 lightDi
     glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBufferID);
-/*
+
+    glBindVertexArray(vertexArrayID);
+    glEnableVertexAttribArray(0);
+
+    glm::mat4 model = glm::mat4(1.0f);
+
+    // -------------------
     // Depth Mapping
+    // -------------------
     glUseProgram(depthProgramID);
+
     glBindFramebuffer(GL_FRAMEBUFFER, fbo);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    glUniformMatrix4fv(lightSpaceMatrixID, 1, GL_FALSE, &lightSpaceMatrix[0][0]);
+    glUniformMatrix4fv(lightSpaceMatrixIDDepth, 1, GL_FALSE, &lightSpaceMatrix[0][0]);
+    glUniformMatrix4fv(modelMatrixIDDepth, 1, GL_FALSE, &model[0][0]);
 
     glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(indices.size()), GL_UNSIGNED_INT, 0);
+    // -------------------
+    // -------------------
 
-    // render scene
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glUseProgram(programID);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-    glUniformMatrix4fv(mvpMatrixID, 1, GL_FALSE, &mvp[0][0]);
-    glUniformMatrix4fv(lightSpaceMatrixID, 1, GL_FALSE, &lightSpaceMatrix[0][0]);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, textureID);
+    glUniform1i(textureSamplerID, 0);
+
+    glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, depthTexture);
+    glUniform1i(depthTextureSamplerID, 1);
 
-    // Set light data
-    glUniform3fv(lightDirectionID, 1, &lightDirection[0]);
+    glm::mat4 mvp = vp * model;
+    glUniformMatrix4fv(mvpMatrixID, 1, GL_FALSE, &mvp[0][0]);
+    glUniformMatrix4fv(modelMatrixIDRender, 1, GL_FALSE, &model[0][0]);
+
     glUniform3fv(lightIntensityID, 1, &lightIntensity[0]);
-*/
+    glUniform3fv(lightDirectionID, 1, &lightDirection[0]);
+    glUniformMatrix4fv(lightSpaceMatrixIDRender, 1, GL_FALSE, &lightSpaceMatrix[0][0]);
+
     glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(indices.size()), GL_UNSIGNED_INT, 0);
 
     glDisableVertexAttribArray(0);
     glDisableVertexAttribArray(2);
     glDisableVertexAttribArray(3);
+
+    if (saveDepth) {
+        std::string filename = "depth_camera.png";
+        saveDepthTexture(0, filename);
+        std::cout << "Depth texture saved to " << filename << std::endl;
+        filename = "depth_light.png";
+        saveDepthTexture(fbo, filename);
+        std::cout << "Depth texture saved to " << filename << std::endl;
+        saveDepth = false;
+    }
 }
 
 void Terrain::cleanup() {
@@ -235,6 +292,5 @@ void Terrain::cleanup() {
     glDeleteTextures(1, &textureID);
     glDeleteProgram(programID);
     glDeleteFramebuffers(1, &fbo);
-    glDeleteTextures(1, &depthTexture);
     glDeleteProgram(depthProgramID);
 }

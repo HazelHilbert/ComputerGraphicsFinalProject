@@ -20,7 +20,9 @@ void main() {
 
     // Calculate world position of the fragment
     fragPos = vec3(Model * vec4(vertexPosition, 1.0));
+    //fragPos = vertexPosition;
 
     // Transform the normal vector to world space
     normal = mat3(transpose(inverse(Model))) * vertexNormal;
+    //normal = vertexNormal;
 }

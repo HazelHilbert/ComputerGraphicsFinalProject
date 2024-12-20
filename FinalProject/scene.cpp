@@ -46,12 +46,12 @@ const glm::vec3 wave700(205.0f, 0.0f, 0.0f);
 //static glm::vec3 lightIntensity = 5.0f * (8.0f * wave500 + 15.6f * wave600 + 18.4f * wave700);
 static glm::vec3 lightIntensity(5e6f, 5e6f, 5e6f);
 
-static glm::vec3 lightDirection = glm::normalize(glm::vec3(-275.0f, -500.0f, -275.0f)); // Example direction
+static glm::vec3 lightDirection = glm::normalize(glm::vec3(-275.0f, -275.0f, -275.0f)); // Example direction
 
 // Shadow mapping
 static glm::vec3 lightUp(0.0f, 1.0f, 0.0f);
-static int shadowMapWidth = 1024;
-static int shadowMapHeight = 1024;
+static int shadowMapWidth = 2024;
+static int shadowMapHeight = 2024;
 
 glm::mat4 lightSpaceMatrix;
 
@@ -220,7 +220,7 @@ int main(void)
 	sky.initialize(glm::vec3(0,0,0), glm::vec3(100.f,100.0f,100.0f));
 
 	Terrain terrain;
-	terrain.initialize(1000,1000,30);
+	terrain.initialize(200,200,30);
 
 	// -------------------------------------
 	// -------------------------------------
@@ -230,12 +230,13 @@ int main(void)
 
 
 	// Define light's orthographic projection parameters
-	float near_plane = 1.0f, far_plane = 1000.0f;
-	glm::mat4 lightProjection = glm::ortho(-500.0f, 500.0f, -500.0f, 500.0f, near_plane, far_plane);
+	float near_plane = 0.1f, far_plane = 400.0f;
+	float orthoSize = 150.0f; // should be slightly larger than half the terrain size
+	glm::mat4 lightProjection = glm::ortho(-orthoSize, orthoSize, -orthoSize, orthoSize, near_plane, far_plane);
 
 	// Define light's view matrix
 	// Position the light source based on lightDirection
-	glm::vec3 lightPos = -lightDirection * 1000.0f; // Position the light far away in the opposite direction
+	glm::vec3 lightPos = -lightDirection * 200.0f; // Position the light far away in the opposite direction
 	glm::mat4 lightView = glm::lookAt(lightPos, glm::vec3(0.0f), lightUp);
 
 	// Combine to get lightSpaceMatrix
@@ -275,10 +276,11 @@ int main(void)
 
 		axis.render(vp);
 		building.render(vp);
-		//bot.render(vp, lightPosition, lightIntensity);
 		terrain.render(vp, lightSpaceMatrix, lightDirection, lightIntensity);
+		//bot.render(vp, lightPos, lightIntensity);
+		//glEnable(GL_DEPTH_TEST);
 
-		// FPS tracking 
+		// FPS tracking
 		// Count number of frames over a few seconds and take average
 		frames++;
 		fTime += deltaTime;
@@ -315,6 +317,11 @@ int main(void)
 static void key_callback(GLFWwindow *window, int key, int scancode, int action, int mode)
 {
 	const float moveSpeed = 5.0f;
+
+	if (key == GLFW_KEY_C && action == GLFW_PRESS) {
+		glm::vec3 lightPos = -lightDirection * 200.0f; // Position the light far away in the opposite direction
+		eye_center = lightPos;
+	}
 
 	if (key == GLFW_KEY_UP && (action == GLFW_REPEAT || action == GLFW_PRESS)) {
 		eye_center.y += moveSpeed;

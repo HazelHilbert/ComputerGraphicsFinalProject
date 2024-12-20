@@ -32,6 +32,8 @@ private:
 
     // Shader variable IDs
     GLuint mvpMatrixID;
+    GLuint modelMatrixIDRender;
+    GLuint modelMatrixIDDepth;
     GLuint textureSamplerID;
     GLuint programID;
 
@@ -39,7 +41,9 @@ private:
     GLuint fbo;
     GLuint depthTexture;
     GLuint depthProgramID;
-    GLuint lightSpaceMatrixID;
+    GLuint lightSpaceMatrixIDRender;
+    GLuint lightSpaceMatrixIDDepth;
+    GLuint depthTextureSamplerID;
 };
 
 #endif
