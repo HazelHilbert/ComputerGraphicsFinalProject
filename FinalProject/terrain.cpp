@@ -4,14 +4,13 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <iostream>
 #include <utils.h>
-
-#define STB_PERLIN_IMPLEMENTATION
 #include <stb_image_write.h>
 
+#define STB_PERLIN_IMPLEMENTATION
 #include "stb_perlin.h"
 
-static int shadowMapWidth = 2024;
-static int shadowMapHeight = 2024;
+static int shadowMapWidth = 2048;
+static int shadowMapHeight = 1536;
 
 bool saveDepth = true;
 
@@ -23,7 +22,7 @@ static void saveDepthTexture(GLuint fbo, std::string filename) {
 
     std::vector<float> depth(width * height);
     glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-    glReadBuffer(GL_DEPTH_COMPONENT);
+    //glReadBuffer(GL_DEPTH_COMPONENT);
     glReadPixels(0, 0, width, height, GL_DEPTH_COMPONENT, GL_FLOAT, depth.data());
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
@@ -194,21 +193,12 @@ void Terrain::initialize(int width, int depth, float maxHeight) {
     mvpMatrixID = glGetUniformLocation(programID, "MVP");
     modelMatrixIDRender = glGetUniformLocation(programID, "Model");
     modelMatrixIDDepth = glGetUniformLocation(depthProgramID, "Model");
-    if (lightSpaceMatrixIDRender == -1) {
-        std::cerr << "Could not find uniform 'model' in depth shader." << std::endl;
-    }
 
     lightIntensityID = glGetUniformLocation(programID, "lightIntensity");
     lightDirectionID = glGetUniformLocation(programID, "lightDirection");
 
     lightSpaceMatrixIDRender = glGetUniformLocation(programID, "lightSpaceMatrixRender");
-    if (lightSpaceMatrixIDRender == -1) {
-        std::cerr << "Could not find uniform 'lightSpaceMatrix' in depth shader." << std::endl;
-    }
     lightSpaceMatrixIDDepth = glGetUniformLocation(depthProgramID, "lightSpaceMatrix");
-    if (lightSpaceMatrixIDDepth == -1) {
-        std::cerr << "Could not find uniform 'lightSpaceMatrix' in depth shader." << std::endl;
-    }
 
     depthTextureSamplerID = glGetUniformLocation(programID, "depthTextureSampler");
 }
@@ -237,6 +227,7 @@ void Terrain::render(glm::mat4 vp, glm::mat4 lightSpaceMatrix, glm::vec3 lightDi
     // Depth Mapping
     // -------------------
     glUseProgram(depthProgramID);
+    glViewport(0, 0, shadowMapWidth, shadowMapHeight);
 
     glBindFramebuffer(GL_FRAMEBUFFER, fbo);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -250,6 +241,7 @@ void Terrain::render(glm::mat4 vp, glm::mat4 lightSpaceMatrix, glm::vec3 lightDi
 
     glUseProgram(programID);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glViewport(0, 0, 2*1024, 2*768);
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, textureID);

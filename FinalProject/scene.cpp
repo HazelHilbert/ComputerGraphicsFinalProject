@@ -50,8 +50,8 @@ static glm::vec3 lightDirection = glm::normalize(glm::vec3(-275.0f, -275.0f, -27
 
 // Shadow mapping
 static glm::vec3 lightUp(0.0f, 1.0f, 0.0f);
-static int shadowMapWidth = 2024;
-static int shadowMapHeight = 2024;
+static int shadowMapWidth = 2048;
+static int shadowMapHeight = 1536;
 
 glm::mat4 lightSpaceMatrix;
 
