@@ -26,6 +26,7 @@ static int windowHeight = 768;
 static void key_callback(GLFWwindow *window, int key, int scancode, int action, int mode);
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods);
 void cursor_position_callback(GLFWwindow* window, double xpos, double ypos);
+void updateLightSpaceMatrix();
 
 // Camera
 static glm::vec3 eye_center(0, 100, 100);
@@ -55,6 +56,11 @@ static int shadowMapWidth = 2048;
 static int shadowMapHeight = 1536;
 
 glm::mat4 lightSpaceMatrix;
+
+// Define light's orthographic projection parameters
+float near_plane = 0.1f, far_plane = 400.0f;
+float orthoSize = 150.0f; // should be slightly larger than half the terrain size
+glm::mat4 lightProjection = glm::ortho(-orthoSize, orthoSize, -orthoSize, orthoSize, near_plane, far_plane);
 
 // Animation 
 static bool playAnimation = false;
@@ -235,20 +241,7 @@ int main(void)
 	glm::mat4 viewMatrix, projectionMatrix;
 	projectionMatrix = glm::perspective(glm::radians(FoV), (float)windowWidth / windowHeight, zNear, zFar);
 
-
-	// Define light's orthographic projection parameters
-	float near_plane = 0.1f, far_plane = 400.0f;
-	float orthoSize = 150.0f; // should be slightly larger than half the terrain size
-	glm::mat4 lightProjection = glm::ortho(-orthoSize, orthoSize, -orthoSize, orthoSize, near_plane, far_plane);
-
-	// Define light's view matrix
-	// Position the light source based on lightDirection
-	glm::vec3 lightPos = -lightDirection * 200.0f; // Position the light far away in the opposite direction
-	glm::mat4 lightView = glm::lookAt(lightPos, glm::vec3(0.0f), lightUp);
-
-	// Combine to get lightSpaceMatrix
-	glm::mat4 lightSpaceMatrix = lightProjection * lightView;
-
+	updateLightSpaceMatrix();
 
 	// Time and frame rate tracking
 	static double lastTime = glfwGetTime();
@@ -276,6 +269,8 @@ int main(void)
 		glm::mat4 vp = projectionMatrix * viewMatrix;
 
 		glm::mat4 vp_skybox = projectionMatrix * glm::mat4(glm::mat3(viewMatrix));
+
+
 
 		glDepthMask(GL_FALSE);
 		sky.render(vp_skybox);
@@ -353,24 +348,28 @@ static void key_callback(GLFWwindow *window, int key, int scancode, int action, 
 		glm::vec3 viewDirection = glm::normalize(lookat - eye_center);
 		eye_center += viewDirection * moveSpeed;
 		lookat += viewDirection * moveSpeed;
+		updateLightSpaceMatrix();
 	}
 
 	if (key == GLFW_KEY_S && (action == GLFW_REPEAT || action == GLFW_PRESS)) {
 		glm::vec3 viewDirection = glm::normalize(lookat - eye_center);
 		eye_center -= viewDirection * moveSpeed;
 		lookat -= viewDirection * moveSpeed;
+		updateLightSpaceMatrix();
 	}
 
 	if (key == GLFW_KEY_A && (action == GLFW_REPEAT || action == GLFW_PRESS)) {
 		glm::vec3 direction = glm::normalize(glm::cross(glm::normalize(lookat - eye_center), up));
 		eye_center -= direction * moveSpeed;
 		lookat -= direction * moveSpeed;
+		updateLightSpaceMatrix();
 	}
 
 	if (key == GLFW_KEY_D && (action == GLFW_REPEAT || action == GLFW_PRESS)) {
 		glm::vec3 direction = glm::normalize(glm::cross(glm::normalize(lookat - eye_center), up));
 		eye_center += direction * moveSpeed;
 		lookat += direction * moveSpeed;
+		updateLightSpaceMatrix();
 	}
 
 	if (key == GLFW_KEY_SPACE && action == GLFW_PRESS) {
@@ -393,6 +392,7 @@ static void key_callback(GLFWwindow *window, int key, int scancode, int action, 
 		eye_center = glm::vec3(100.0f, 100.0f, 100.0f);
 		lookat =  glm::vec3(0,0,0);
 		std::cout << "Camera Reset." << std::endl;
+		updateLightSpaceMatrix();
 	}
 
 	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
@@ -430,4 +430,12 @@ void cursor_position_callback(GLFWwindow* window, double xpos, double ypos) {
 	viewDirection = glm::vec3(verticalRotation * glm::vec4(viewDirection, 0.0f));
 
 	lookat = eye_center + viewDirection;
+}
+
+void updateLightSpaceMatrix() {
+	const float lightDistance = 200.0f; // Adjust as needed
+	const float fixedLightY = 10.0f; // Example value, adjust based on your scene
+	glm::vec3 lightPos = glm::vec3(eye_center.x, fixedLightY, eye_center.z) - lightDirection * lightDistance;
+	glm::mat4 lightView = glm::lookAt(lightPos, glm::vec3(eye_center.x, 0.0f, eye_center.z), lightUp);
+	lightSpaceMatrix = lightProjection * lightView;
 }

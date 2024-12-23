@@ -39,15 +39,15 @@ void main()
     int totalSamples = (2 * PCF_SIZE + 1) * (2 * PCF_SIZE + 1);
     shadow /= float(totalSamples);
 
-    if(any(lessThan(lightSpace0to1, vec3(0.0))) || any(greaterThan(lightSpace0to1, vec3(1.0)))) shadow = 1.0;
+    if(any(lessThan(lightSpace0to1, vec3(0.01))) || any(greaterThan(lightSpace0to1, vec3(0.99)))) shadow = 1.0;
 
     // lighting, tone mapping, gamma correction
     float theta = max(dot(normal, -lightDirection), 0.0);
     vec3 texureColor = texture(textureSampler, uv).rgb;
-    vec3 lambertianColor = theta * normalize(lightIntensity) * texureColor;
+    vec3 lambertianColor = shadow * theta * normalize(lightIntensity) * texureColor;
     vec3 toneColor = lambertianColor / (1.0 + lambertianColor);
     vec3 sRGB = pow(toneColor, vec3(1.0 / gamma));
     finalColor = lambertianColor;
 
-   // finalColor = vec3(shadow);
+    //finalColor = vec3(shadow);
 }
