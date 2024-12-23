@@ -8,6 +8,7 @@ uniform sampler2D textureSampler;
 uniform sampler2D depthTextureSampler;
 uniform vec3 lightDirection;
 uniform vec3 lightIntensity;
+uniform vec3 cameraPos;
 
 uniform mat4 lightSpaceMatrixRender;
 
@@ -15,7 +16,14 @@ const float gamma = 2.2;
 const float bias = 1e-3;
 const int PCF_SIZE = 3;
 
-out vec3 finalColor;
+// Define fog parameters
+const vec3 fogColor = vec3(0.71, 0.72, 0.73); // Gray fog
+const float fogDensity = 0.003;            // Adjust for thickness
+// Linear fog parameters
+const float fogStart = 600.0; // Distance where fog starts
+const float fogEnd = 1000.0;   // Distance where fog fully obscures
+
+out vec4 finalColor;
 
 void main()
 {
@@ -45,9 +53,26 @@ void main()
     float theta = max(dot(normal, -lightDirection), 0.0);
     vec3 texureColor = texture(textureSampler, uv).rgb;
     vec3 lambertianColor = shadow * theta * normalize(lightIntensity) * texureColor;
+
+
+    // --- Exponential Fog Calculation ---
+    // Compute distance from camera to fragment
+    float distance = length(fragPos - vec3(cameraPos.x,0,cameraPos.z));
+
+    // Calculate fog factor using exponential formula
+    //float fogFactor = exp(-fogDensity * distance);
+    float fogFactor = 1 - ((distance - fogStart) / (fogEnd - fogStart));
+
+    fogFactor = clamp(fogFactor, 0.0, 1.0);
+    vec3 colorWithFog = mix(fogColor, lambertianColor, fogFactor);
+
+
     vec3 toneColor = lambertianColor / (1.0 + lambertianColor);
     vec3 sRGB = pow(toneColor, vec3(1.0 / gamma));
-    finalColor = lambertianColor;
+
+    finalColor = vec4(lambertianColor, fogFactor);
+    if (fogFactor > 0.1) fogFactor = 1.0;
+    finalColor = vec4(colorWithFog, fogFactor);
 
     //finalColor = vec3(shadow);
 }

@@ -250,7 +250,7 @@ void TerrainManager::render(const glm::mat4& vp, const glm::mat4& lightSpaceMatr
 
     // Now draw all chunks
     for(auto& chunkPtr : chunks) {
-        chunkPtr->terrain.render(vp, lightSpaceMatrix, lightDirection, lightIntensity);
+        chunkPtr->terrain.render(vp, lightSpaceMatrix, lightDirection, lightIntensity, cameraPos);
     }
 }
 

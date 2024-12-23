@@ -21,7 +21,7 @@ public:
 
     void initialize(int width, int depth, float maxHeight, float posX = 0.0f, float posZ = 0.0f);
 
-    void render(glm::mat4 vp, glm::mat4 lightSpaceMatrix, glm::vec3 lightDirection, glm::vec3 lightIntensity);
+    void render(glm::mat4 vp, glm::mat4 lightSpaceMatrix, glm::vec3 lightDirection, glm::vec3 lightIntensity, glm::vec3 cameraPos);
 
     void cleanup();
 
@@ -38,6 +38,7 @@ private:
     GLuint normalBufferID;
     GLuint lightIntensityID;
     GLuint lightDirectionID;
+    GLuint cameraPosID;
     GLuint uvBufferID;
     GLuint textureID;
 

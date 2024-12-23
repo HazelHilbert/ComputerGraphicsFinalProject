@@ -221,6 +221,7 @@ void Terrain::initialize(int width, int depth, float maxHeight, float posX, floa
 
     lightIntensityID = glGetUniformLocation(programID, "lightIntensity");
     lightDirectionID = glGetUniformLocation(programID, "lightDirection");
+    cameraPosID = glGetUniformLocation(programID, "cameraPos");
 
     lightSpaceMatrixIDRender = glGetUniformLocation(programID, "lightSpaceMatrixRender");
     lightSpaceMatrixIDDepth = glGetUniformLocation(depthProgramID, "lightSpaceMatrix");
@@ -230,7 +231,7 @@ void Terrain::initialize(int width, int depth, float maxHeight, float posX, floa
     //std::cout << "Vertices: " << vertices.size() << std::endl;
 }
 
-void Terrain::render(glm::mat4 vp, glm::mat4 lightSpaceMatrix, glm::vec3 lightDirection, glm::vec3 lightIntensity) {
+void Terrain::render(glm::mat4 vp, glm::mat4 lightSpaceMatrix, glm::vec3 lightDirection, glm::vec3 lightIntensity, glm::vec3 cameraPos) {
     glEnableVertexAttribArray(0); // Positions
     glBindBuffer(GL_ARRAY_BUFFER, vertexBufferID);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
@@ -285,6 +286,8 @@ void Terrain::render(glm::mat4 vp, glm::mat4 lightSpaceMatrix, glm::vec3 lightDi
     glUniform3fv(lightIntensityID, 1, &lightIntensity[0]);
     glUniform3fv(lightDirectionID, 1, &lightDirection[0]);
     glUniformMatrix4fv(lightSpaceMatrixIDRender, 1, GL_FALSE, &lightSpaceMatrix[0][0]);
+
+    glUniform3fv(cameraPosID, 1, &cameraPos[0]);
 
     glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(indices.size()), GL_UNSIGNED_INT, 0);
 

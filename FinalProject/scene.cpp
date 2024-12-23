@@ -284,10 +284,19 @@ int main(void)
 		//xpos++;
 		//terrain.render(vp, lightSpaceMatrix, lightDirection, lightIntensity);
 		//terrain2.render(vp, lightSpaceMatrix, lightDirection, lightIntensity);
-		terrainM.render(vp, lightSpaceMatrix, lightDirection, lightIntensity, eye_center);
 
-		//bot.render(vp, lightPos, lightIntensity);
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		terrainM.render(vp, lightSpaceMatrix, lightDirection, lightIntensity, eye_center);
+		glDisable(GL_BLEND);
+
+		/*
+		const float lightDistance = 200.0f; // Adjust as needed
+		const float fixedLightY = 10.0f; // Example value, adjust based on your scene
+		glm::vec3 lightPos = glm::vec3(eye_center.x, fixedLightY, eye_center.z) - lightDirection * lightDistance;
+		bot.render(vp, lightPos, lightIntensity);
 		//glEnable(GL_DEPTH_TEST);
+		*/
 
 		// FPS tracking
 		// Count number of frames over a few seconds and take average
