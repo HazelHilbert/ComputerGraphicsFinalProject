@@ -7,6 +7,8 @@
 
 class Terrain {
 public:
+    void setTerrain(int width, int depth, float maxHeight, float posX, float posZ);
+
     void setProgramIDs(GLuint inputProgramID, GLuint inputDepthProgramID);
 
     void initialize(int width, int depth, float maxHeight, float posX = 0.0f, float posZ = 0.0f);

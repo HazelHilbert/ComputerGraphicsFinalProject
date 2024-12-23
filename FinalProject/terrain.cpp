@@ -31,12 +31,10 @@ static void saveDepthTexture(GLuint fbo, std::string filename) {
     stbi_write_png(filename.c_str(), width, height, channels, img.data(), width * channels);
 }
 
-void Terrain::setProgramIDs(GLuint inputProgramID, GLuint inputDepthProgramID) {
-    if (programID == 0) programID = inputProgramID;
-    if (depthProgramID == 0) depthProgramID = inputDepthProgramID;
-}
+void Terrain::setTerrain(int width, int depth, float maxHeight, float posX, float posZ) {
+    vertices.clear();
+    normals.clear();
 
-void Terrain::initialize(int width, int depth, float maxHeight, float posX, float posZ) {
     float halfWidth = width / 2.0f;
     float halfDepth = depth / 2.0f;
 
@@ -77,31 +75,6 @@ void Terrain::initialize(int width, int depth, float maxHeight, float posX, floa
             float height = noiseValue * maxHeight;
 
             vertices.emplace_back(glm::vec3(worldX, height, worldZ));
-
-            //uvs.emplace_back(glm::vec2(x / static_cast<float>(width), z / static_cast<float>(depth)));
-            float tilingFactor = 20.0f;
-            uvs.emplace_back(glm::vec2(
-                (x / static_cast<float>(width)) * tilingFactor,
-                (z / static_cast<float>(depth)) * tilingFactor
-            ));
-
-        }
-    }
-
-    // Index buffer generation
-    for (int z = 0; z < depth; ++z) {
-        for (int x = 0; x < width; ++x) {
-            GLuint topLeft = z * (width + 1) + x;
-            GLuint topRight = topLeft + 1;
-            GLuint bottomLeft = (z + 1) * (width + 1) + x;
-            GLuint bottomRight = bottomLeft + 1;
-
-            indices.push_back(topLeft);
-            indices.push_back(bottomLeft);
-            indices.push_back(topRight);
-            indices.push_back(topRight);
-            indices.push_back(bottomLeft);
-            indices.push_back(bottomRight);
         }
     }
 
@@ -129,16 +102,62 @@ void Terrain::initialize(int width, int depth, float maxHeight, float posX, floa
     }
 
     // Normalize the normals
-    for (size_t i = 0; i < normals.size(); ++i) {
-        normals[i] = glm::normalize(normals[i]);
+    for (auto & normal : normals) {
+        normal = glm::normalize(normal);
+    }
+
+    glBindBuffer(GL_ARRAY_BUFFER, vertexBufferID);
+    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(glm::vec3), vertices.data(), GL_STATIC_DRAW);
+
+    glBindBuffer(GL_ARRAY_BUFFER, normalBufferID);
+    glBufferData(GL_ARRAY_BUFFER, normals.size() * sizeof(glm::vec3), normals.data(), GL_STATIC_DRAW);
+}
+
+void Terrain::setProgramIDs(GLuint inputProgramID, GLuint inputDepthProgramID) {
+    if (programID == 0) programID = inputProgramID;
+    if (depthProgramID == 0) depthProgramID = inputDepthProgramID;
+}
+
+void Terrain::initialize(int width, int depth, float maxHeight, float posX, float posZ) {
+    // Index buffer generation
+    for (int z = 0; z < depth; ++z) {
+        int currentRow = z * (width + 1);
+        int nextRow = (z + 1) * (width + 1);
+
+        for (int x = 0; x < width; ++x) {
+            GLuint topLeft = currentRow + x;
+            GLuint topRight = topLeft + 1;
+            GLuint bottomLeft = nextRow + x;
+            GLuint bottomRight = bottomLeft + 1;
+
+            indices.push_back(topLeft);
+            indices.push_back(bottomLeft);
+            indices.push_back(topRight);
+            indices.push_back(topRight);
+            indices.push_back(bottomLeft);
+            indices.push_back(bottomRight);
+        }
+    }
+
+    // UV initialization
+    float tilingFactor = 2.0f;
+    for (int z = 0; z <= depth; ++z) {
+        for (int x = 0; x <= width; ++x) {
+            uvs.emplace_back(glm::vec2(
+                (x / static_cast<float>(width)) * tilingFactor,
+                (z / static_cast<float>(depth)) * tilingFactor
+            ));
+        }
     }
 
     glGenVertexArrays(1, &vertexArrayID);
     glBindVertexArray(vertexArrayID);
 
     glGenBuffers(1, &vertexBufferID);
-    glBindBuffer(GL_ARRAY_BUFFER, vertexBufferID);
-    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(glm::vec3), vertices.data(), GL_STATIC_DRAW);
+
+    glGenBuffers(1, &normalBufferID);
+
+    setTerrain(width, depth, maxHeight, posX, posZ);
 
     glGenBuffers(1, &uvBufferID);
     glBindBuffer(GL_ARRAY_BUFFER, uvBufferID);
@@ -147,10 +166,6 @@ void Terrain::initialize(int width, int depth, float maxHeight, float posX, floa
     glGenBuffers(1, &indexBufferID);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBufferID);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(GLuint), indices.data(), GL_STATIC_DRAW);
-
-    glGenBuffers(1, &normalBufferID);
-    glBindBuffer(GL_ARRAY_BUFFER, normalBufferID);
-    glBufferData(GL_ARRAY_BUFFER, normals.size() * sizeof(glm::vec3), normals.data(), GL_STATIC_DRAW);
 
     // Create a fbo
     glGenFramebuffers(1, &fbo);
@@ -181,7 +196,7 @@ void Terrain::initialize(int width, int depth, float maxHeight, float posX, floa
         createTerrainProgramIDs(programID, depthProgramID);
     }
 
-    std::string filePath = "../FinalProject/assets/textures/grass.jpg";
+    std::string filePath = "../FinalProject/assets/textures/sky.png";
     textureID = LoadTextureTileBox(filePath.c_str());
     textureSamplerID = glGetUniformLocation(programID,"textureSampler");
 
@@ -197,6 +212,8 @@ void Terrain::initialize(int width, int depth, float maxHeight, float posX, floa
     lightSpaceMatrixIDDepth = glGetUniformLocation(depthProgramID, "lightSpaceMatrix");
 
     depthTextureSamplerID = glGetUniformLocation(programID, "depthTextureSampler");
+
+    //std::cout << "Vertices: " << vertices.size() << std::endl;
 }
 
 void Terrain::render(glm::mat4 vp, glm::mat4 lightSpaceMatrix, glm::vec3 lightDirection, glm::vec3 lightIntensity) {

@@ -8,7 +8,7 @@
 const int CHUNK_SIZE = 200;
 const int MAX_HEIGHT = 30;
 
-const int VIEW_DISTANCE = 2; // 1 for a 3x3 grid
+const int VIEW_DISTANCE = 1; // 1 for a 3x3 grid
 
 // Structure to uniquely identify each chunk by its grid position
 struct ChunkPosition {
@@ -47,8 +47,6 @@ private:
     ChunkPosition currentCenter;
 
     ChunkPosition getChunkPosition(const glm::vec3& pos);
-    void loadChunk(const ChunkPosition& cp);
-    void unloadChunk(const ChunkPosition& cp);
 
     GLuint programID = 0;
     GLuint depthProgramID = 0;

@@ -221,6 +221,7 @@ int main(void)
 	sky.initialize(glm::vec3(0,0,0), glm::vec3(100.f,100.0f,100.0f));
 
 	Terrain terrain;
+	int xpos = 0;
 	terrain.initialize(200,200,30);
 	Terrain terrain2;
 	terrain2.initialize(200,200,30, 200, 0);
@@ -282,6 +283,10 @@ int main(void)
 
 		axis.render(vp);
 		building.render(vp);
+
+
+		//terrain.setTerrain(200,200,30, xpos, 0);
+		//xpos++;
 		//terrain.render(vp, lightSpaceMatrix, lightDirection, lightIntensity);
 		//terrain2.render(vp, lightSpaceMatrix, lightDirection, lightIntensity);
 		terrainM.render(vp, lightSpaceMatrix, lightDirection, lightIntensity, eye_center);

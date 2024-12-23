@@ -12,7 +12,16 @@ void TerrainManager::initialize(const glm::vec3& cameraPos) {
     for(int x = -VIEW_DISTANCE; x <= VIEW_DISTANCE; ++x) {
         for(int z = -VIEW_DISTANCE; z <= VIEW_DISTANCE; ++z) {
             ChunkPosition cp = {currentCenter.x + x, currentCenter.z + z};
-            loadChunk(cp);
+
+            Terrain terrain;
+            terrain.setProgramIDs(programID, depthProgramID);
+
+            // Initialize each chunk with its unique position
+            // posX and posY are the world coordinates based on chunk grid
+            float posX = cp.x * CHUNK_SIZE;
+            float posZ = cp.z * CHUNK_SIZE;
+            terrain.initialize(CHUNK_SIZE, CHUNK_SIZE, MAX_HEIGHT, posX, posZ);
+            chunks.emplace(cp, std::move(terrain));
         }
     }
 }
@@ -25,58 +34,93 @@ ChunkPosition TerrainManager::getChunkPosition(const glm::vec3& pos) {
     };
 }
 
-// Load a chunk if it's not already loaded
-void TerrainManager::loadChunk(const ChunkPosition& cp) {
-    if(chunks.find(cp) != chunks.end()) return; // Already loaded
-
-    Terrain terrain;
-    terrain.setProgramIDs(programID, depthProgramID);
-    // Initialize each chunk with its unique position
-    // posX and posY are the world coordinates based on chunk grid
-    float posX = cp.x * CHUNK_SIZE;
-    float posZ = cp.z * CHUNK_SIZE;
-    terrain.initialize(CHUNK_SIZE, CHUNK_SIZE, MAX_HEIGHT, posX, posZ);
-    chunks.emplace(cp, std::move(terrain));
-
-    //std::cout << "Loaded chunk (" << cp.x << ", " << cp.z << ")" << std::endl;
-}
-
-// Unload a chunk that's no longer within the view distance
-void TerrainManager::unloadChunk(const ChunkPosition& cp) {
-    auto it = chunks.find(cp);
-    if(it != chunks.end()) {
-        it->second.cleanup();
-        chunks.erase(it);
-        //std::cout << "Unloaded chunk (" << cp.x << ", " << cp.z << ")" << std::endl;
-    }
-}
-
 // Update the TerrainManager based on the camera's new position
 void TerrainManager::update(const glm::vec3& cameraPos) {
     ChunkPosition newCenter = getChunkPosition(cameraPos);
 
-    if(newCenter.x != currentCenter.x || newCenter.z != currentCenter.z) {
-        // Load new chunks within the new view distance
-        for(int x = -VIEW_DISTANCE; x <= VIEW_DISTANCE; ++x) {
+    const int deltaX = newCenter.x - currentCenter.x;
+    const int deltaZ = newCenter.z - currentCenter.z;
+
+    if(deltaX == 0 && deltaZ == 0) return;
+
+    std::vector<ChunkPosition> chunksToAdd;
+    std::vector<ChunkPosition> chunksToReplace;
+
+    // Handle movement along X axis
+    if (deltaX > 0) { // Moving East
+        for(int x = 1; x <= deltaX; ++x) {
             for(int z = -VIEW_DISTANCE; z <= VIEW_DISTANCE; ++z) {
-                ChunkPosition cp = {newCenter.x + x, newCenter.z + z};
-                loadChunk(cp);
+                ChunkPosition cp = {newCenter.x + VIEW_DISTANCE, newCenter.z + z};
+                chunksToAdd.push_back(cp);
             }
         }
-
-        // Unload chunks that are outside the view distance
-        for(auto it = chunks.begin(); it != chunks.end(); ) {
-            if(std::abs(it->first.x - newCenter.x) > VIEW_DISTANCE || std::abs(it->first.z - newCenter.z) > VIEW_DISTANCE) {
-                it->second.cleanup();
-                //std::cout << "Unloading chunk (" << it->first.x << ", " << it->first.z << ")" << std::endl;
-                it = chunks.erase(it);
-            } else {
-                ++it;
+        // Identify chunks to replace on the West side
+        for(int x = 0; x < deltaX; ++x) {
+            for(int z = -VIEW_DISTANCE; z <= VIEW_DISTANCE; ++z) {
+                ChunkPosition cp = {currentCenter.x - VIEW_DISTANCE + x, currentCenter.z + z};
+                chunksToReplace.push_back(cp);
             }
         }
-
-        currentCenter = newCenter;
     }
+    else if (deltaX < 0) { // Moving West
+        for(int z = -VIEW_DISTANCE; z <= VIEW_DISTANCE; ++z) {
+            ChunkPosition cp = {newCenter.x - VIEW_DISTANCE, newCenter.z + z};
+            chunksToAdd.push_back(cp);
+        }
+        // Identify chunks to replace on the East side
+        for(int x = 0; x < -deltaX; ++x) {
+            for(int z = -VIEW_DISTANCE; z <= VIEW_DISTANCE; ++z) {
+                ChunkPosition cp = {currentCenter.x + VIEW_DISTANCE + x, currentCenter.z + z};
+                chunksToReplace.push_back(cp);
+            }
+        }
+    }
+
+    // Handle movement along Z axis
+    else if (deltaZ > 0) { // Moving North
+        for(int z = 1; z <= deltaZ; ++z) {
+            for(int x = -VIEW_DISTANCE; x <= VIEW_DISTANCE; ++x) {
+                ChunkPosition cp = {newCenter.x + x, newCenter.z + VIEW_DISTANCE};
+                chunksToAdd.push_back(cp);
+            }
+        }
+        // Identify chunks to replace on the South side
+        for(int z = 0; z < deltaZ; ++z) {
+            for(int x = -VIEW_DISTANCE; x <= VIEW_DISTANCE; ++x) {
+                ChunkPosition cp = {currentCenter.x + x, currentCenter.z - VIEW_DISTANCE + z};
+                chunksToReplace.push_back(cp);
+            }
+        }
+    }
+
+    else if (deltaZ < 0) { // Moving South
+        for(int x = -VIEW_DISTANCE; x <= VIEW_DISTANCE; ++x) {
+            ChunkPosition cp = {newCenter.x + x, newCenter.z - VIEW_DISTANCE};
+            chunksToAdd.push_back(cp);
+        }
+        // Identify chunks to replace on the North side
+        for(int z = 0; z < -deltaZ; ++z) {
+            for(int x = -VIEW_DISTANCE; x <= VIEW_DISTANCE; ++x) {
+                ChunkPosition cp = {currentCenter.x + x, currentCenter.z + VIEW_DISTANCE + z};
+                chunksToReplace.push_back(cp);
+            }
+        }
+    }
+
+    std::cout << "Chunks to Add: " << chunksToAdd.size() << ", Chunks to Remove: " << chunksToReplace.size() << std::endl;
+
+    for (int i = 0; i < chunksToReplace.size(); i++) {
+        ChunkPosition chunkToReplacePosition = chunksToReplace[i];
+        ChunkPosition chunkToAddPosition = chunksToAdd[i];
+
+        float posX = chunkToAddPosition.x * CHUNK_SIZE;
+        float posZ = chunkToAddPosition.z * CHUNK_SIZE;
+
+        //need to update replaced chunks new position
+        chunks.at(chunkToReplacePosition).setTerrain(CHUNK_SIZE, CHUNK_SIZE, MAX_HEIGHT, posX, posZ);
+    }
+
+    currentCenter = newCenter;
 }
 
 void TerrainManager::render(const glm::mat4& vp, const glm::mat4& lightSpaceMatrix, const glm::vec3& lightDirection, const glm::vec3& lightIntensity, const glm::vec3& cameraPos) {
