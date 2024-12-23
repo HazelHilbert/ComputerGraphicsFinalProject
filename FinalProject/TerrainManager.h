@@ -5,10 +5,10 @@
 #include <unordered_map>
 #include <glm/glm.hpp>
 
-const int CHUNK_SIZE = 200;
+const int CHUNK_SIZE = 500;
 const int MAX_HEIGHT = 30;
 
-const int VIEW_DISTANCE = 1; // 1 for a 3x3 grid
+const int VIEW_DISTANCE = 2; // 1 for a 3x3 grid
 
 // Structure to uniquely identify each chunk by its grid position
 struct ChunkPosition {
@@ -20,19 +20,14 @@ struct ChunkPosition {
     }
 };
 
-// Hash function for ChunkPosition to use in unordered_map
-namespace std {
-    template <>
-    struct hash<ChunkPosition> {
-        std::size_t operator()(const ChunkPosition& cp) const {
-            // A simple hash combining x and z
-            return (std::hash<int>()(cp.x) << 16) ^ std::hash<int>()(cp.z);
-        }
-    };
-}
+struct Chunk {
+    ChunkPosition position;
+    Terrain terrain;
+};
 
 class TerrainManager {
 public:
+    int findChunkIndex(const ChunkPosition &cp) const;
 
     void initialize(const glm::vec3& cameraPos);
 
@@ -43,7 +38,7 @@ public:
     void cleanup();
 
 private:
-    std::unordered_map<ChunkPosition, Terrain> chunks;
+    std::vector<Chunk> chunks;
     ChunkPosition currentCenter;
 
     ChunkPosition getChunkPosition(const glm::vec3& pos);

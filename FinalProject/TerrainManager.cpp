@@ -2,6 +2,17 @@
 #include "utils.h"
 #include <cmath>
 #include <iostream>
+#include <set>
+#include <unordered_set>
+
+int TerrainManager::findChunkIndex(const ChunkPosition& cp) const {
+    for (size_t i = 0; i < chunks.size(); ++i) {
+        if (chunks[i].position == cp) {
+            return static_cast<int>(i);
+        }
+    }
+    return -1;
+}
 
 void TerrainManager::initialize(const glm::vec3& cameraPos) {
     currentCenter = getChunkPosition(cameraPos);
@@ -21,7 +32,11 @@ void TerrainManager::initialize(const glm::vec3& cameraPos) {
             float posX = cp.x * CHUNK_SIZE;
             float posZ = cp.z * CHUNK_SIZE;
             terrain.initialize(CHUNK_SIZE, CHUNK_SIZE, MAX_HEIGHT, posX, posZ);
-            chunks.emplace(cp, std::move(terrain));
+
+            Chunk newChunk;
+            newChunk.position = cp;
+            newChunk.terrain = std::move(terrain);
+            chunks.emplace_back(std::move(newChunk));
         }
     }
 }
@@ -77,18 +92,30 @@ void TerrainManager::update(const glm::vec3& cameraPos) {
     }
 
     // Handle movement along Z axis
-    else if (deltaZ > 0) { // Moving North
+    if (deltaZ > 0) { // Moving North
         for(int z = 1; z <= deltaZ; ++z) {
             for(int x = -VIEW_DISTANCE; x <= VIEW_DISTANCE; ++x) {
                 ChunkPosition cp = {newCenter.x + x, newCenter.z + VIEW_DISTANCE};
-                chunksToAdd.push_back(cp);
+                bool add = true;
+                if (deltaX != 0) {
+                    for (auto & chunk : chunksToAdd) {
+                        if (chunk.x == cp.x && chunk.z == cp.z) add = false;
+                    }
+                }
+                if (add) chunksToAdd.push_back(cp);
             }
         }
         // Identify chunks to replace on the South side
         for(int z = 0; z < deltaZ; ++z) {
             for(int x = -VIEW_DISTANCE; x <= VIEW_DISTANCE; ++x) {
                 ChunkPosition cp = {currentCenter.x + x, currentCenter.z - VIEW_DISTANCE + z};
-                chunksToReplace.push_back(cp);
+                bool replace = true;
+                if (deltaX != 0) {
+                    for (auto & chunk : chunksToReplace) {
+                        if (chunk.x == cp.x && chunk.z == cp.z) replace = false;
+                    }
+                }
+                if (replace) chunksToReplace.push_back(cp);
             }
         }
     }
@@ -96,28 +123,37 @@ void TerrainManager::update(const glm::vec3& cameraPos) {
     else if (deltaZ < 0) { // Moving South
         for(int x = -VIEW_DISTANCE; x <= VIEW_DISTANCE; ++x) {
             ChunkPosition cp = {newCenter.x + x, newCenter.z - VIEW_DISTANCE};
-            chunksToAdd.push_back(cp);
+            bool add = true;
+            if (deltaX != 0) {
+                for (auto & chunk : chunksToAdd) {
+                    if (chunk.x == cp.x && chunk.z == cp.z) add = false;
+                }
+            }
+            if (add) chunksToAdd.push_back(cp);
         }
         // Identify chunks to replace on the North side
         for(int z = 0; z < -deltaZ; ++z) {
             for(int x = -VIEW_DISTANCE; x <= VIEW_DISTANCE; ++x) {
                 ChunkPosition cp = {currentCenter.x + x, currentCenter.z + VIEW_DISTANCE + z};
-                chunksToReplace.push_back(cp);
+                bool replace = true;
+                if (deltaX != 0) {
+                    for (auto & chunk : chunksToReplace) {
+                        if (chunk.x == cp.x && chunk.z == cp.z) replace = false;
+                    }
+                }
+                if (replace) chunksToReplace.push_back(cp);
             }
         }
     }
 
-    std::cout << "Chunks to Add: " << chunksToAdd.size() << ", Chunks to Remove: " << chunksToReplace.size() << std::endl;
-
     for (int i = 0; i < chunksToReplace.size(); i++) {
-        ChunkPosition chunkToReplacePosition = chunksToReplace[i];
         ChunkPosition chunkToAddPosition = chunksToAdd[i];
+        int posX = chunkToAddPosition.x * CHUNK_SIZE;
+        int posZ = chunkToAddPosition.z * CHUNK_SIZE;
 
-        float posX = chunkToAddPosition.x * CHUNK_SIZE;
-        float posZ = chunkToAddPosition.z * CHUNK_SIZE;
-
-        //need to update replaced chunks new position
-        chunks.at(chunkToReplacePosition).setTerrain(CHUNK_SIZE, CHUNK_SIZE, MAX_HEIGHT, posX, posZ);
+        Chunk& updatedChunk = chunks.at(findChunkIndex(chunksToReplace[i]));
+        updatedChunk.position = chunkToAddPosition;
+        updatedChunk.terrain.setTerrain(CHUNK_SIZE, CHUNK_SIZE, MAX_HEIGHT, posX, posZ);
     }
 
     currentCenter = newCenter;
@@ -126,14 +162,14 @@ void TerrainManager::update(const glm::vec3& cameraPos) {
 void TerrainManager::render(const glm::mat4& vp, const glm::mat4& lightSpaceMatrix, const glm::vec3& lightDirection, const glm::vec3& lightIntensity, const glm::vec3& cameraPos) {
     update(cameraPos);
 
-    for(auto& pair : chunks) {
-        pair.second.render(vp, lightSpaceMatrix, lightDirection, lightIntensity);
+    for(auto& chunk : chunks) {
+        chunk.terrain.render(vp, lightSpaceMatrix, lightDirection, lightIntensity);
     }
 }
 
 void TerrainManager::cleanup() {
-    for(auto& pair : chunks) {
-        pair.second.cleanup();
+    for(auto& chunk : chunks) {
+        chunk.terrain.cleanup();
     }
     chunks.clear();
 
