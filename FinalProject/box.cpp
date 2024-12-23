@@ -114,7 +114,7 @@ void Box::render(glm::mat4 cameraMatrix) {
 
 	glDisableVertexAttribArray(0);
 	glDisableVertexAttribArray(1);
-    //glDisableVertexAttribArray(2);
+    glDisableVertexAttribArray(2);
 }
 
 void Box::cleanup() {

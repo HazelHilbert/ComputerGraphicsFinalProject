@@ -32,6 +32,8 @@ add_executable(scene
 		FinalProject/box.cpp
 		FinalProject/box.h
 		external/stb/stb_perlin.h
+		FinalProject/TerrainManager.cpp
+		FinalProject/TerrainManager.h
 )
 target_link_libraries(scene
 	${OPENGL_LIBRARY}

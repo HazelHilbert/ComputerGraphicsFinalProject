@@ -3,6 +3,8 @@
 #include <iostream>
 #include <random>
 #include <stb_image.h>
+#include <render/shader.h>
+
 
 GLuint LoadTextureTileBox(const char *texture_file_path) {
     int w, h, channels;
@@ -26,4 +28,12 @@ GLuint LoadTextureTileBox(const char *texture_file_path) {
     stbi_image_free(img);
 
     return texture;
+}
+
+void createTerrainProgramIDs(GLuint& inputProgramID, GLuint& inputDepthProgramID) {
+    inputProgramID = LoadShadersFromFile("../FinalProject/shader/terrain.vert", "../FinalProject/shader/terrain.frag");
+    if (inputProgramID == 0) std::cerr << "Failed to load shaders." << std::endl;
+
+    inputDepthProgramID = LoadShadersFromFile("../FinalProject/shader/depth.vert", "../FinalProject/shader/depth.frag");
+    if (inputDepthProgramID == 0) std::cerr << "Failed to load depth shaders." << std::endl;
 }

@@ -7,7 +7,9 @@
 
 class Terrain {
 public:
-    void initialize(int width, int depth, float maxHeight);
+    void setProgramIDs(GLuint inputProgramID, GLuint inputDepthProgramID);
+
+    void initialize(int width, int depth, float maxHeight, float posX = 0.0f, float posZ = 0.0f);
 
     void render(glm::mat4 vp, glm::mat4 lightSpaceMatrix, glm::vec3 lightDirection, glm::vec3 lightIntensity);
 
@@ -26,7 +28,6 @@ private:
     GLuint normalBufferID;
     GLuint lightIntensityID;
     GLuint lightDirectionID;
-    //GLuint colorBufferID;
     GLuint uvBufferID;
     GLuint textureID;
 
@@ -35,12 +36,12 @@ private:
     GLuint modelMatrixIDRender;
     GLuint modelMatrixIDDepth;
     GLuint textureSamplerID;
-    GLuint programID;
+    GLuint programID = 0;
 
     // Variables for depth mapping
     GLuint fbo;
     GLuint depthTexture;
-    GLuint depthProgramID;
+    GLuint depthProgramID = 0;
     GLuint lightSpaceMatrixIDRender;
     GLuint lightSpaceMatrixIDDepth;
     GLuint depthTextureSamplerID;

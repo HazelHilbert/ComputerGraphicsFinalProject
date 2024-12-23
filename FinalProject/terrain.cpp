@@ -1,5 +1,4 @@
 #include "terrain.h"
-#include <render/shader.h>
 
 #include <glm/gtc/matrix_transform.hpp>
 #include <iostream>
@@ -12,7 +11,7 @@
 static int shadowMapWidth = 2048;
 static int shadowMapHeight = 1536;
 
-bool saveDepth = true;
+bool saveDepth = false;
 
 static void saveDepthTexture(GLuint fbo, std::string filename) {
     int width = shadowMapWidth;
@@ -32,7 +31,12 @@ static void saveDepthTexture(GLuint fbo, std::string filename) {
     stbi_write_png(filename.c_str(), width, height, channels, img.data(), width * channels);
 }
 
-void Terrain::initialize(int width, int depth, float maxHeight) {
+void Terrain::setProgramIDs(GLuint inputProgramID, GLuint inputDepthProgramID) {
+    if (programID == 0) programID = inputProgramID;
+    if (depthProgramID == 0) depthProgramID = inputDepthProgramID;
+}
+
+void Terrain::initialize(int width, int depth, float maxHeight, float posX, float posZ) {
     float halfWidth = width / 2.0f;
     float halfDepth = depth / 2.0f;
 
@@ -44,8 +48,8 @@ void Terrain::initialize(int width, int depth, float maxHeight) {
 
     for (int z = 0; z <= depth; ++z) {
         for (int x = 0; x <= width; ++x) {
-            float worldX = x - halfWidth;
-            float worldZ = z - halfDepth;
+            float worldX = x - halfWidth + posX;
+            float worldZ = z - halfDepth + posZ;
 
             float noiseValue = 0.0f;
             float frequency = scale;
@@ -173,16 +177,8 @@ void Terrain::initialize(int width, int depth, float maxHeight) {
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-
-    programID = LoadShadersFromFile("../FinalProject/shader/terrain.vert", "../FinalProject/shader/terrain.frag");
-    if (programID == 0) {
-        std::cerr << "Failed to load shaders." << std::endl;
-    }
-
-    depthProgramID = LoadShadersFromFile("../FinalProject/shader/depth.vert", "../FinalProject/shader/depth.frag");
-    if (depthProgramID == 0)
-    {
-        std::cerr << "Failed to load depth shaders." << std::endl;
+    if (programID == 0 || depthProgramID == 0) {
+        createTerrainProgramIDs(programID, depthProgramID);
     }
 
     std::string filePath = "../FinalProject/assets/textures/grass.jpg";
@@ -282,7 +278,5 @@ void Terrain::cleanup() {
     glDeleteVertexArrays(1, &vertexArrayID);
     glDeleteBuffers(1, &uvBufferID);
     glDeleteTextures(1, &textureID);
-    glDeleteProgram(programID);
     glDeleteFramebuffers(1, &fbo);
-    glDeleteProgram(depthProgramID);
 }

@@ -4,4 +4,6 @@
 
 GLuint LoadTextureTileBox(const char *texture_file_path);
 
+void createTerrainProgramIDs(GLuint& inputProgramID, GLuint& inputDepthProgramID);
+
 #endif

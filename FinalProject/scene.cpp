@@ -2,6 +2,7 @@
 #include "terrain.h"
 #include "sky.h"
 #include "box.h"
+#include "TerrainManager.h"
 
 #include <glad/gl.h>
 #include <GLFW/glfw3.h>
@@ -221,6 +222,11 @@ int main(void)
 
 	Terrain terrain;
 	terrain.initialize(200,200,30);
+	Terrain terrain2;
+	terrain2.initialize(200,200,30, 200, 0);
+
+	TerrainManager terrainM;
+	terrainM.initialize(eye_center);
 
 	// -------------------------------------
 	// -------------------------------------
@@ -276,7 +282,10 @@ int main(void)
 
 		axis.render(vp);
 		building.render(vp);
-		terrain.render(vp, lightSpaceMatrix, lightDirection, lightIntensity);
+		//terrain.render(vp, lightSpaceMatrix, lightDirection, lightIntensity);
+		//terrain2.render(vp, lightSpaceMatrix, lightDirection, lightIntensity);
+		terrainM.render(vp, lightSpaceMatrix, lightDirection, lightIntensity, eye_center);
+
 		//bot.render(vp, lightPos, lightIntensity);
 		//glEnable(GL_DEPTH_TEST);
 
@@ -307,6 +316,8 @@ int main(void)
 	building.cleanup();
 	sky.cleanup();
 	terrain.cleanup();
+	terrain2.cleanup();
+	terrainM.cleanup();
 
 	// Close OpenGL window and terminate GLFW
 	glfwTerminate();
@@ -316,7 +327,7 @@ int main(void)
 
 static void key_callback(GLFWwindow *window, int key, int scancode, int action, int mode)
 {
-	const float moveSpeed = 5.0f;
+	const float moveSpeed = 30.0f;
 
 	if (key == GLFW_KEY_C && action == GLFW_PRESS) {
 		glm::vec3 lightPos = -lightDirection * 200.0f; // Position the light far away in the opposite direction
