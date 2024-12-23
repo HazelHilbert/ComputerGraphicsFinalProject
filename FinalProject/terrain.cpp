@@ -4,6 +4,8 @@
 #include <iostream>
 #include <utils.h>
 #include <stb_image_write.h>
+#include <future>
+#include <condition_variable>
 
 #define STB_PERLIN_IMPLEMENTATION
 #include "stb_perlin.h"
@@ -31,87 +33,97 @@ static void saveDepthTexture(GLuint fbo, std::string filename) {
     stbi_write_png(filename.c_str(), width, height, channels, img.data(), width * channels);
 }
 
-void Terrain::setTerrain(int width, int depth, float maxHeight, float posX, float posZ) {
-    vertices.clear();
-    normals.clear();
+std::future<TerrainData> Terrain::generateTerrainAsync(int width, int depth, float maxHeight, float posX, float posZ) {
+    return std::async(std::launch::async, [=]() -> TerrainData {
+        TerrainData data;
 
-    float halfWidth = width / 2.0f;
-    float halfDepth = depth / 2.0f;
+        // Begin generating vertices and normals
+        float halfWidth = width / 2.0f;
+        float halfDepth = depth / 2.0f;
 
-    // Perlin noise parameters
-    float scale = 0.02f; // Controls the frequency of the noise
-    int octaves = 6;     // Number of layers of noise
-    float persistence = 0.5f; // Amplitude multiplier for each octave
-    float lacunarity = 2.0f;  // Frequency multiplier for each octave
+        // Perlin noise parameters
+        float scale = 0.02f; // Controls the frequency of the noise
+        int octaves = 6;     // Number of layers of noise
+        float persistence = 0.5f; // Amplitude multiplier for each octave
+        float lacunarity = 2.0f;  // Frequency multiplier for each octave
 
-    for (int z = 0; z <= depth; ++z) {
-        for (int x = 0; x <= width; ++x) {
-            float worldX = x - halfWidth + posX;
-            float worldZ = z - halfDepth + posZ;
+        for (int z = 0; z <= depth; ++z) {
+            for (int x = 0; x <= width; ++x) {
+                float worldX = x - halfWidth + posX;
+                float worldZ = z - halfDepth + posZ;
 
-            float noiseValue = 0.0f;
-            float frequency = scale;
-            float amplitude = 1.0f;
-            float maxAmplitude = 0.0f; // For normalization
+                float noiseValue = 0.0f;
+                float frequency = scale;
+                float amplitude = 1.0f;
+                float maxAmplitude = 0.0f; // For normalization
 
-            // Generate fractal noise by combining multiple octaves
-            for (int i = 0; i < octaves; ++i) {
-                float sampleX = worldX * frequency;
-                float sampleZ = worldZ * frequency;
+                // Generate fractal noise by combining multiple octaves
+                for (int i = 0; i < octaves; ++i) {
+                    float sampleX = worldX * frequency;
+                    float sampleZ = worldZ * frequency;
 
-                // stb_perlin_noise3 requires float inputs; the third parameter is usually set to 0 for 2D noise
-                float perlin = stb_perlin_noise3(sampleX, sampleZ, 0.0f, 0, 0, 0);
-                noiseValue += perlin * amplitude;
+                    float perlin = stb_perlin_noise3(sampleX, sampleZ, 0.0f, 0, 0, 0);
+                    noiseValue += perlin * amplitude;
 
-                maxAmplitude += amplitude;
-                amplitude *= persistence;
-                frequency *= lacunarity;
+                    maxAmplitude += amplitude;
+                    amplitude *= persistence;
+                    frequency *= lacunarity;
+                }
+
+                // Normalize the noise value to range [-1, 1]
+                noiseValue /= maxAmplitude;
+
+                // Scale the noise value to the desired height range
+                float height = noiseValue * maxHeight;
+
+                data.vertices.emplace_back(glm::vec3(worldX, height, worldZ));
             }
-
-            // Normalize the noise value to range [-1, 1]
-            noiseValue /= maxAmplitude;
-
-            // Scale the noise value to the desired height range
-            float height = noiseValue * maxHeight;
-
-            vertices.emplace_back(glm::vec3(worldX, height, worldZ));
         }
-    }
 
-    // Initialize normals
-    normals.resize(vertices.size(), glm::vec3(0.0f, 0.0f, 0.0f));
+        // Initialize normals
+        data.normals.resize(data.vertices.size(), glm::vec3(0.0f, 0.0f, 0.0f));
 
-    // Compute normals
-    for (size_t i = 0; i < indices.size(); i += 3) {
-        GLuint idx0 = indices[i];
-        GLuint idx1 = indices[i + 1];
-        GLuint idx2 = indices[i + 2];
+        // Compute normals
+        for (size_t i = 0; i < indices.size(); i += 3) {
+            GLuint idx0 = indices[i];
+            GLuint idx1 = indices[i + 1];
+            GLuint idx2 = indices[i + 2];
 
-        glm::vec3 v0 = vertices[idx0];
-        glm::vec3 v1 = vertices[idx1];
-        glm::vec3 v2 = vertices[idx2];
+            glm::vec3 v0 = data.vertices[idx0];
+            glm::vec3 v1 = data.vertices[idx1];
+            glm::vec3 v2 = data.vertices[idx2];
 
-        glm::vec3 edge1 = v1 - v0;
-        glm::vec3 edge2 = v2 - v0;
+            glm::vec3 edge1 = v1 - v0;
+            glm::vec3 edge2 = v2 - v0;
 
-        glm::vec3 faceNormal = glm::normalize(glm::cross(edge1, edge2));
+            glm::vec3 faceNormal = glm::normalize(glm::cross(edge1, edge2));
 
-        normals[idx0] += faceNormal;
-        normals[idx1] += faceNormal;
-        normals[idx2] += faceNormal;
-    }
+            data.normals[idx0] += faceNormal;
+            data.normals[idx1] += faceNormal;
+            data.normals[idx2] += faceNormal;
+        }
 
-    // Normalize the normals
-    for (auto & normal : normals) {
-        normal = glm::normalize(normal);
-    }
+        // Normalize the normals
+        for (auto & normal : data.normals) {
+            normal = glm::normalize(normal);
+        }
 
-    glBindBuffer(GL_ARRAY_BUFFER, vertexBufferID);
-    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(glm::vec3), vertices.data(), GL_STATIC_DRAW);
-
-    glBindBuffer(GL_ARRAY_BUFFER, normalBufferID);
-    glBufferData(GL_ARRAY_BUFFER, normals.size() * sizeof(glm::vec3), normals.data(), GL_STATIC_DRAW);
+        return data;
+    });
 }
+
+void Terrain::updateBuffers(const TerrainData& data) {
+    std::lock_guard<std::mutex> lock(bufferMutex); // Protect buffer updates if accessed from multiple threads
+
+    // Update vertex buffer
+    glBindBuffer(GL_ARRAY_BUFFER, vertexBufferID);
+    glBufferData(GL_ARRAY_BUFFER, data.vertices.size() * sizeof(glm::vec3), data.vertices.data(), GL_STATIC_DRAW);
+
+    // Update normal buffer
+    glBindBuffer(GL_ARRAY_BUFFER, normalBufferID);
+    glBufferData(GL_ARRAY_BUFFER, data.normals.size() * sizeof(glm::vec3), data.normals.data(), GL_STATIC_DRAW);
+}
+
 
 void Terrain::setProgramIDs(GLuint inputProgramID, GLuint inputDepthProgramID) {
     if (programID == 0) programID = inputProgramID;
@@ -140,7 +152,7 @@ void Terrain::initialize(int width, int depth, float maxHeight, float posX, floa
     }
 
     // UV initialization
-    float tilingFactor = 2.0f;
+    float tilingFactor = 20.0f;
     for (int z = 0; z <= depth; ++z) {
         for (int x = 0; x <= width; ++x) {
             uvs.emplace_back(glm::vec2(
@@ -157,7 +169,9 @@ void Terrain::initialize(int width, int depth, float maxHeight, float posX, floa
 
     glGenBuffers(1, &normalBufferID);
 
-    setTerrain(width, depth, maxHeight, posX, posZ);
+    std::future<TerrainData> fut = generateTerrainAsync(width, depth, maxHeight, posX, posZ);
+    TerrainData data = fut.get();
+    updateBuffers(data);
 
     glGenBuffers(1, &uvBufferID);
     glBindBuffer(GL_ARRAY_BUFFER, uvBufferID);
@@ -196,7 +210,7 @@ void Terrain::initialize(int width, int depth, float maxHeight, float posX, floa
         createTerrainProgramIDs(programID, depthProgramID);
     }
 
-    std::string filePath = "../FinalProject/assets/textures/sky.png";
+    std::string filePath = "../FinalProject/assets/textures/grass.jpg";
     textureID = LoadTextureTileBox(filePath.c_str());
     textureSamplerID = glGetUniformLocation(programID,"textureSampler");
 

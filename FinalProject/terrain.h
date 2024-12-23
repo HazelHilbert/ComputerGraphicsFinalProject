@@ -1,13 +1,21 @@
 #ifndef TERRAIN_H
 #define TERRAIN_H
 
+#include <future>
 #include <vector>
 #include <glm/glm.hpp>
 #include "glad/gl.h"
 
+struct TerrainData {
+    std::vector<glm::vec3> vertices;
+    std::vector<glm::vec3> normals;
+};
+
 class Terrain {
 public:
-    void setTerrain(int width, int depth, float maxHeight, float posX, float posZ);
+    std::future<TerrainData> generateTerrainAsync(int width, int depth, float maxHeight, float posX, float posZ);
+
+    void updateBuffers(const TerrainData& data);
 
     void setProgramIDs(GLuint inputProgramID, GLuint inputDepthProgramID);
 
@@ -47,6 +55,8 @@ private:
     GLuint lightSpaceMatrixIDRender;
     GLuint lightSpaceMatrixIDDepth;
     GLuint depthTextureSamplerID;
+
+    std::mutex bufferMutex;
 };
 
 #endif
