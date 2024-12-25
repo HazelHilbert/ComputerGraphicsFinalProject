@@ -219,13 +219,22 @@ int main(void)
 	bot.initialize();
 
 	Model city0;
-	city0.initialize("../FinalProject/assets/model/box/untitled.gltf", 50, 50, 10, 270.0f, glm::vec3(1.0f, 0.0f, 0.0f));
+	city0.initialize("../FinalProject/assets/model/city/city_LOD0.gltf", 50, 201, 0, 10, 270, glm::vec3(1.0f, 0.0f, 0.0f));
+
+	Model hull0;
+	hull0.initialize("../FinalProject/assets/model/hull/hull_LOD0.gltf", 50, 200, 0, 10, 270, glm::vec3(1.0f, 0.0f, 0.0f));
 
 	Model city1;
-	//city1.initialize("../FinalProject/assets/model/cityLOD2/cityLOD2.gltf", 150, 50, 10, 270.0f, glm::vec3(1.0f, 0.0f, 0.0f));
+	city1.initialize("../FinalProject/assets/model/city/city_LOD1.gltf", 250, 201, 0, 10, 270, glm::vec3(1.0f, 0.0f, 0.0f));
+
+	Model hull1;
+	hull1.initialize("../FinalProject/assets/model/hull/hull_LOD1.gltf", 250, 200, 0, 10, 270, glm::vec3(1.0f, 0.0f, 0.0f));
 
 	Model city2;
-	//city2.initialize("../FinalProject/assets/model/city_LOD2/city_LOD2.gltf", 250, 50, 10, 270.0f, glm::vec3(1.0f, 0.0f, 0.0f));
+	city2.initialize("../FinalProject/assets/model/city/city_LOD2.gltf", 450, 201, 0, 10, 270, glm::vec3(1.0f, 0.0f, 0.0f));
+
+	Model hull2;
+	hull2.initialize("../FinalProject/assets/model/hull/hull_LOD2.gltf", 450, 200, 0, 10, 270, glm::vec3(1.0f, 0.0f, 0.0f));
 
 
 	//city.initialize("../FinalProject/assets/model/cloud_city_gltf/scene.gltf",50, 100, 10, 270.0f, glm::vec3(1.0f, 0.0f, 0.0f));
@@ -294,8 +303,11 @@ int main(void)
 		axis.render(vp);
 		//building.render(vp);
 		city0.render(vp, lightPos, lightIntensity);
-		//city1.render(vp, lightPos, lightIntensity);
-		//city2.render(vp, lightPos, lightIntensity);
+		hull0.render(vp, lightPos, lightIntensity);
+		city1.render(vp, lightPos, lightIntensity);
+		hull1.render(vp, lightPos, lightIntensity);
+		city2.render(vp, lightPos, lightIntensity);
+		hull2.render(vp, lightPos, lightIntensity);
 
 
 		//terrain.render(vp, lightSpaceMatrix, lightDirection, lightIntensity, eye_center);

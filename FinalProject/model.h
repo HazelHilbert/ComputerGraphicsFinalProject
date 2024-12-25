@@ -18,7 +18,7 @@ public:
         GLuint textureID;
     };
 
-    void initialize(const std::string &filename, float xpos, float ypos, float size, float rotation, glm::vec3 rotationAxis);
+    void initialize(const std::string &filename, float xpos, float ypos, float zpos, float size, float rotation, glm::vec3 rotationAxis);
 
     void render(const glm::mat4 &cameraMatrix, const glm::vec3 &lightPosition, const glm::vec3 &lightIntensity);
 

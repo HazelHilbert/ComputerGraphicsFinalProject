@@ -33,7 +33,7 @@ bool Model::loadModel(tinygltf::Model &model, const char *filename) {
     return res;
 }
 
-void Model::initialize(const std::string &filename, float xpos, float ypos, float size, float rotation, glm::vec3 rotationAxis) {
+void Model::initialize(const std::string &filename, float xpos, float ypos, float zpos, float size, float rotation, glm::vec3 rotationAxis) {
     if (!loadModel(m_model, filename.c_str())) {
         return;
     }
@@ -54,10 +54,11 @@ void Model::initialize(const std::string &filename, float xpos, float ypos, floa
 
     // Create transformation matrix
     m_modelMatrix = glm::mat4(1.0f);
-    m_modelMatrix = glm::translate(m_modelMatrix, glm::vec3(xpos, ypos, 0.0f));
+    m_modelMatrix = glm::translate(m_modelMatrix, glm::vec3(xpos, ypos, zpos));
     m_modelMatrix = glm::rotate(m_modelMatrix, glm::radians(rotation), rotationAxis);
     m_modelMatrix = glm::scale(m_modelMatrix, glm::vec3(size, size, size));
 
+    /*
     size_t triangleCount = 0;
     for (const auto &mesh : m_model.meshes) {
         for (const auto &primitive : mesh.primitives) {
@@ -68,6 +69,7 @@ void Model::initialize(const std::string &filename, float xpos, float ypos, floa
         }
     }
     std::cout << "Total triangles in the model: " << triangleCount << std::endl;
+    */
 }
 
 
