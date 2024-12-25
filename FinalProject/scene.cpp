@@ -3,6 +3,7 @@
 #include "sky.h"
 #include "box.h"
 #include "TerrainManager.h"
+#include "model.h"
 
 #include <glad/gl.h>
 #include <GLFW/glfw3.h>
@@ -217,6 +218,18 @@ int main(void)
 	MyBot bot;
 	bot.initialize();
 
+	Model city0;
+	city0.initialize("../FinalProject/assets/model/box/untitled.gltf", 50, 50, 10, 270.0f, glm::vec3(1.0f, 0.0f, 0.0f));
+
+	Model city1;
+	//city1.initialize("../FinalProject/assets/model/cityLOD2/cityLOD2.gltf", 150, 50, 10, 270.0f, glm::vec3(1.0f, 0.0f, 0.0f));
+
+	Model city2;
+	//city2.initialize("../FinalProject/assets/model/city_LOD2/city_LOD2.gltf", 250, 50, 10, 270.0f, glm::vec3(1.0f, 0.0f, 0.0f));
+
+
+	//city.initialize("../FinalProject/assets/model/cloud_city_gltf/scene.gltf",50, 100, 10, 270.0f, glm::vec3(1.0f, 0.0f, 0.0f));
+
 	Box building;
 	building.initialize(glm::vec3(10.f,10.f,10.f), glm::vec3(10.f,10.0f,10.0f));
 
@@ -227,7 +240,6 @@ int main(void)
 	sky.initialize(glm::vec3(0,0,0), glm::vec3(100.f,100.0f,100.0f));
 
 	Terrain terrain;
-	int xpos = 0;
 	terrain.initialize(200,200,30);
 	Terrain terrain2;
 	terrain2.initialize(200,200,30, 200, 0);
@@ -270,6 +282,9 @@ int main(void)
 
 		glm::mat4 vp_skybox = projectionMatrix * glm::mat4(glm::mat3(viewMatrix));
 
+		const float lightDistance = 200.0f; // Adjust as needed
+		const float fixedLightY = 10.0f; // Example value, adjust based on your scene
+		glm::vec3 lightPos = glm::vec3(eye_center.x, fixedLightY, eye_center.z) - lightDirection * lightDistance;
 
 
 		glDepthMask(GL_FALSE);
@@ -277,26 +292,24 @@ int main(void)
 		glDepthMask(GL_TRUE);
 
 		axis.render(vp);
-		building.render(vp);
+		//building.render(vp);
+		city0.render(vp, lightPos, lightIntensity);
+		//city1.render(vp, lightPos, lightIntensity);
+		//city2.render(vp, lightPos, lightIntensity);
 
 
-		//terrain.setTerrain(200,200,30, xpos, 0);
-		//xpos++;
-		//terrain.render(vp, lightSpaceMatrix, lightDirection, lightIntensity);
+		//terrain.render(vp, lightSpaceMatrix, lightDirection, lightIntensity, eye_center);
 		//terrain2.render(vp, lightSpaceMatrix, lightDirection, lightIntensity);
+
+		// animations need to be rendered right before terrain because some states are set and not properly reset
+		if (playAnimation) bot.render(vp, lightPos, lightIntensity);
+		glEnable(GL_DEPTH_TEST);
+
 
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		terrainM.render(vp, lightSpaceMatrix, lightDirection, lightIntensity, eye_center);
 		glDisable(GL_BLEND);
-
-		/*
-		const float lightDistance = 200.0f; // Adjust as needed
-		const float fixedLightY = 10.0f; // Example value, adjust based on your scene
-		glm::vec3 lightPos = glm::vec3(eye_center.x, fixedLightY, eye_center.z) - lightDirection * lightDistance;
-		bot.render(vp, lightPos, lightIntensity);
-		//glEnable(GL_DEPTH_TEST);
-		*/
 
 		// FPS tracking
 		// Count number of frames over a few seconds and take average
