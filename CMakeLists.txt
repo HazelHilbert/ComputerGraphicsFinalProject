@@ -36,6 +36,8 @@ add_executable(scene
 		FinalProject/TerrainManager.h
 		FinalProject/model.cpp
 		FinalProject/model.h
+		FinalProject/CityManager.cpp
+		FinalProject/CityManager.h
 )
 target_link_libraries(scene
 	${OPENGL_LIBRARY}

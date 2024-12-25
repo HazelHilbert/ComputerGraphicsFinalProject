@@ -6,12 +6,12 @@
 #include <tiny_gltf.h>
 #include <vector>
 #include <map>
-
+#include <string>
+#include <unordered_map>
 
 class Model
 {
 public:
-
     struct PrimitiveObject {
         GLuint vao;
         std::map<int, GLuint> vbos;
@@ -25,19 +25,33 @@ public:
     void cleanup();
 
 private:
-    tinygltf::Model m_model;
-    std::vector<PrimitiveObject> m_primitiveObjects;
+    // Shared model data structure
+    struct ModelData {
+        tinygltf::Model m_model;
+        std::vector<PrimitiveObject> m_primitiveObjects;
+        GLuint m_programID;
+        GLuint m_mvpMatrixID;
+        GLuint m_lightPositionID;
+        GLuint m_lightIntensityID;
+
+        // Reference count to manage shared resources
+        int refCount;
+
+        ModelData() : m_programID(0), m_mvpMatrixID(0),
+                     m_lightPositionID(0), m_lightIntensityID(0), refCount(1) {}
+    };
+
+    // Static map to cache loaded models
+    static std::unordered_map<std::string, std::shared_ptr<ModelData>> s_modelCache;
+
+    // Shared model data
+    std::shared_ptr<ModelData> m_sharedData;
+
+    // Transformation matrix for this instance
     glm::mat4 m_modelMatrix;
 
-    // GLSL program and uniform locations
-    GLuint m_programID = 0;
-    GLuint m_mvpMatrixID = 0;
-    GLuint m_lightPositionID = 0;
-    GLuint m_lightIntensityID = 0;
-
-    // helper functions
-    bool loadModel(tinygltf::Model &model, const char *filename);
-
+    // Helper functions
+    bool loadModel(tinygltf::Model &model, const std::string &filename);
     std::vector<PrimitiveObject> bindModel(tinygltf::Model &model);
     void bindModelNodes(std::vector<PrimitiveObject> &primitiveObjects,
                         tinygltf::Model &model,
@@ -48,12 +62,6 @@ private:
 
     void drawModel(const std::vector<PrimitiveObject> &primitiveObjects,
                    tinygltf::Model &model);
-    void drawModelNodes(const std::vector<PrimitiveObject> &primitiveObjects,
-                        tinygltf::Model &model,
-                        tinygltf::Node &node);
-    void drawMesh(const std::vector<PrimitiveObject> &primitiveObjects,
-                  tinygltf::Model &model,
-                  tinygltf::Mesh &mesh);
 };
 
-#endif
+#endif // MODEL_H
