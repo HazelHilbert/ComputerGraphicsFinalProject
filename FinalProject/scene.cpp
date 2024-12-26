@@ -223,23 +223,24 @@ int main(void)
 	//Model city0;
 	//city0.initialize("../FinalProject/assets/model/city/city_LOD0.gltf", 50, 201, 0, 10, 270, glm::vec3(1.0f, 0.0f, 0.0f));
 
-	Model hull0;
-	hull0.initialize("../FinalProject/assets/model/hull/hull_LOD0.gltf", 50, 200, 0, 10, 270, glm::vec3(1.0f, 0.0f, 0.0f));
+	//Model hull0;
+	//hull0.initialize("../FinalProject/assets/model/hull/hull_LOD0.gltf", 50, 200, 0, 10, 270, glm::vec3(1.0f, 0.0f, 0.0f));
 
 	//Model city1;
 	//city1.initialize("../FinalProject/assets/model/city/city_LOD1.gltf", 250, 201, 0, 10, 270, glm::vec3(1.0f, 0.0f, 0.0f));
 
-	Model hull1;
-	hull1.initialize("../FinalProject/assets/model/hull/hull_LOD1.gltf", 250, 200, 0, 10, 270, glm::vec3(1.0f, 0.0f, 0.0f));
+	//Model hull1;
+	//hull1.initialize("../FinalProject/assets/model/hull/hull_LOD1.gltf", 250, 200, 0, 10, 270, glm::vec3(1.0f, 0.0f, 0.0f));
 
 	//Model city2;
 	//city2.initialize("../FinalProject/assets/model/city/city_LOD2.gltf", 450, 201, 0, 10, 270, glm::vec3(1.0f, 0.0f, 0.0f));
 
-	Model hull2;
-	hull2.initialize("../FinalProject/assets/model/hull/hull_LOD2.gltf", 450, 200, 0, 10, 270, glm::vec3(1.0f, 0.0f, 0.0f));
+	//Model hull2;
+	//hull2.initialize("../FinalProject/assets/model/hull/hull_LOD2.gltf", 450, 200, 0, 10, 270, glm::vec3(1.0f, 0.0f, 0.0f));
 
 	CityManager cityManager;
-	cityManager.initialize(10, 500, 5,10);
+	cityManager.initialize(10);
+	//cityManager.generateCities(1, 20); // TODO:
 
 	//city.initialize("../FinalProject/assets/model/cloud_city_gltf/scene.gltf",50, 100, 10, 270.0f, glm::vec3(1.0f, 0.0f, 0.0f));
 
@@ -299,6 +300,8 @@ int main(void)
 		const float fixedLightY = 10.0f; // Example value, adjust based on your scene
 		glm::vec3 lightPos = glm::vec3(eye_center.x, fixedLightY, eye_center.z) - lightDirection * lightDistance;
 
+		// View Mesh
+		//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
 		glDepthMask(GL_FALSE);
 		sky.render(vp_skybox);
@@ -314,7 +317,9 @@ int main(void)
 		city2.render(vp, lightPos, lightIntensity);
 		hull2.render(vp, lightPos, lightIntensity);
 */
-		cityManager.renderAll(vp, lightPos, lightIntensity);
+
+		//hull0.render(vp, lightPos, lightIntensity);
+
 
 		//terrain.render(vp, lightSpaceMatrix, lightDirection, lightIntensity, eye_center);
 		//terrain2.render(vp, lightSpaceMatrix, lightDirection, lightIntensity);
@@ -328,6 +333,9 @@ int main(void)
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		terrainM.render(vp, lightSpaceMatrix, lightDirection, lightIntensity, eye_center);
 		glDisable(GL_BLEND);
+
+		cityManager.render(vp,lightPos, lightIntensity, eye_center);
+
 
 		// FPS tracking
 		// Count number of frames over a few seconds and take average

@@ -38,6 +38,8 @@ add_executable(scene
 		FinalProject/model.h
 		FinalProject/CityManager.cpp
 		FinalProject/CityManager.h
+		FinalProject/city.cpp
+		FinalProject/city.h
 )
 target_link_libraries(scene
 	${OPENGL_LIBRARY}
