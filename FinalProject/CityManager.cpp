@@ -108,7 +108,7 @@ void CityManager::generateCities(int numberOfCities) {
         city.setModelMatrix(position, size, rotation, glm::vec3(0,0,1));
 
         City hull;
-        hull.setModelMatrix(position - glm::vec3(0,1,0), size, rotation, glm::vec3(0,0,1));
+        hull.setModelMatrix(position - glm::vec3(0,size/10,0), size, rotation, glm::vec3(0,0,1));
 
         city.renderData = &cityLOD0Data;
         hull.renderData = &hullLOD0Data;
@@ -128,6 +128,7 @@ void CityManager::render(glm::mat4& vp, glm::vec3 lightDirection, glm::vec3 ligh
         glUniform3fv(glGetUniformLocation(City::programID, "lightIntensity"), 1, &lightIntensity[0]);
 
         glm::vec3 oldPosition = skyCity.city.position;
+        float hull_offset = oldPosition.y - skyCity.hull.position.y;
         glm::vec3 cameraToOldPos = oldPosition - cameraPos;
         float distanceXY = glm::length(glm::vec3(cameraToOldPos.x, 0,cameraToOldPos.z));
 
@@ -138,11 +139,13 @@ void CityManager::render(glm::mat4& vp, glm::vec3 lightDirection, glm::vec3 ligh
             newPosition.y = oldPosition.y;
 
             skyCity.city.updatePosition(newPosition);
-            skyCity.hull.updatePosition(newPosition - glm::vec3(0,1,0));
+            skyCity.hull.updatePosition(newPosition - glm::vec3(0,hull_offset,0));
             continue;
         }
 
         float distance = glm::distance(oldPosition, cameraPos);
+
+        glm::vec3 LODCameraPos = glm::vec3(0);
 
         // LOD2
         if (distance > LOD1Radius) {
@@ -160,11 +163,12 @@ void CityManager::render(glm::mat4& vp, glm::vec3 lightDirection, glm::vec3 ligh
         else {
             skyCity.city.renderData = &cityLOD0Data;
             skyCity.hull.renderData = &hullLOD0Data;
+            LODCameraPos = cameraPos;
         }
 
 
-        skyCity.city.render(vp, lightDirection, lightIntensity, cameraPos);
-        skyCity.hull.render(vp, lightDirection, lightIntensity, cameraPos);
+        skyCity.city.render(vp, lightDirection, lightIntensity, LODCameraPos);
+        skyCity.hull.render(vp, lightDirection, lightIntensity, LODCameraPos);
     }
 }
 

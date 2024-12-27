@@ -51,8 +51,10 @@ void main()
 
     // lighting, tone mapping, gamma correction
     float theta = max(dot(normal, -lightDirection), 0.0);
+    vec3 tint = vec3(112, 69, 0) * 1.5 / vec3(255.0);
     vec3 texureColor = texture(textureSampler, uv).rgb;
-    vec3 lambertianColor = shadow * theta * normalize(lightIntensity) * texureColor;
+    vec3 tintedTexureColor =  texureColor;// * tint;
+    vec3 lambertianColor = shadow * theta * normalize(lightIntensity) * tintedTexureColor;
 
 
     // --- Exponential Fog Calculation ---
