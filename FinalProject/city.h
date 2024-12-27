@@ -16,7 +16,7 @@ class City {
 public:
     void setModelMatrix(glm::vec3 position, float size = 1, float rotation = 0, glm::vec3 rotationAxis = glm::vec3(0, 0, 1));
     void updatePosition(glm::vec3 position);
-    void render(glm::mat4& vp, glm::vec3& lightPosition, glm::vec3& lightIntensity);
+    void render(glm::mat4& vp, glm::vec3& lightDirection, glm::vec3& lightIntensity, glm::vec3& cameraPos);
     void drawModel();
     void cleanup();
 

@@ -121,10 +121,10 @@ void CityManager::generateCities(int numberOfCities) {
     }
 }
 
-void CityManager::render(glm::mat4& vp, glm::vec3 lightPosition, glm::vec3 lightIntensity, glm::vec3 cameraPos) {
+void CityManager::render(glm::mat4& vp, glm::vec3 lightDirection, glm::vec3 lightIntensity, glm::vec3 cameraPos) {
     for (auto& skyCity : cities) {
         glUseProgram(City::programID);
-        glUniform3fv(glGetUniformLocation(City::programID, "lightPos"), 1, &lightPosition[0]);
+        glUniform3fv(glGetUniformLocation(City::programID, "lightDir"), 1, &lightDirection[0]);
         glUniform3fv(glGetUniformLocation(City::programID, "lightIntensity"), 1, &lightIntensity[0]);
 
         glm::vec3 oldPosition = skyCity.city.position;
@@ -163,8 +163,8 @@ void CityManager::render(glm::mat4& vp, glm::vec3 lightPosition, glm::vec3 light
         }
 
 
-        skyCity.city.render(vp, lightPosition, lightIntensity);
-        skyCity.hull.render(vp, lightPosition, lightIntensity);
+        skyCity.city.render(vp, lightDirection, lightIntensity, cameraPos);
+        skyCity.hull.render(vp, lightDirection, lightIntensity, cameraPos);
     }
 }
 

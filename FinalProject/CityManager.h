@@ -19,16 +19,16 @@ public:
 
     void generateCities(int count);
 
-    void render(glm::mat4& vp, glm::vec3 lightPosition, glm::vec3 lightIntensity, glm::vec3 cameraPos);
+    void render(glm::mat4& vp, glm::vec3 lightDirection, glm::vec3 lightIntensity, glm::vec3 cameraPos);
 
     void cleanup();
 
 private:
     std::vector<SkyCity> cities;
 
-    const float LOD0Radius = 100;
-    const float LOD1Radius = 200;
-    const float LOD2Radius = 500;
+    const float LOD0Radius = 300;
+    const float LOD1Radius = 600;
+    const float LOD2Radius = 1000;
     const float viewRadius = LOD2Radius;
 
     const std::string CITY_LOD0 = "../FinalProject/assets/model/city/city_LOD0.gltf";

@@ -19,16 +19,22 @@ void City::updatePosition(glm::vec3 position) {
     modelMatrix = modelMatrix * rotationScaleMatrix;
 }
 
-void City::render(glm::mat4& vp, glm::vec3& lightPosition, glm::vec3& lightIntensity) {
+void City::render(glm::mat4& vp, glm::vec3& lightDirection, glm::vec3& lightIntensity, glm::vec3& cameraPos) {
     if (!renderData) return;
 
     glUseProgram(programID);
 
     glm::mat4 mvp = vp * modelMatrix;
+    glm::mat3 normalMatrix = glm::mat3(glm::transpose(glm::inverse(modelMatrix)));
+
 
     glUniformMatrix4fv(glGetUniformLocation(programID, "MVPMatrix"), 1, GL_FALSE, &mvp[0][0]);
-    glUniform3fv(glGetUniformLocation(programID, "lightPos"), 1, &lightPosition[0]);
+    glUniformMatrix4fv(glGetUniformLocation(programID, "modelMatrix"), 1, GL_FALSE, &modelMatrix[0][0]);
+    glUniformMatrix3fv(glGetUniformLocation(programID, "normalMatrix"), 1, GL_FALSE, &normalMatrix[0][0]);
+
+    glUniform3fv(glGetUniformLocation(programID, "lightDir"), 1, &lightDirection[0]);
     glUniform3fv(glGetUniformLocation(programID, "lightIntensity"), 1, &lightIntensity[0]);
+    glUniform3fv(glGetUniformLocation(programID, "cameraPos"), 1, &cameraPos[0]);
 
     drawModel();
 }
