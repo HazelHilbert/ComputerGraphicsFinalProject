@@ -10,7 +10,8 @@
 const int CHUNK_SIZE = 500;
 const int MAX_HEIGHT = 30;
 
-const int VIEW_DISTANCE = 2; // 1 for a 3x3 grid
+const int VIEW_DISTANCE = 2; // 1 for a 3x3 grid, 3 for a 5x5 grid
+
 
 // Structure to uniquely identify each chunk by its grid position
 struct ChunkPosition {

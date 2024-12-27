@@ -110,6 +110,13 @@ void CityManager::generateCities(int numberOfCities) {
         City hull;
         hull.setModelMatrix(position - glm::vec3(0,size/10,0), size, rotation, glm::vec3(0,0,1));
 
+        float offset = randomFloat(-city.offsetLength,city.offsetLength);
+        bool up = randomFloat(0,1) < 0.5;
+        city.yOffset = offset;
+        city.up = up;
+        hull.yOffset = offset;
+        hull.up = up;
+
         city.renderData = &cityLOD0Data;
         hull.renderData = &hullLOD0Data;
 

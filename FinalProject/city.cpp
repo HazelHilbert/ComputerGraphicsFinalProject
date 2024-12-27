@@ -23,7 +23,7 @@ void City::render(glm::mat4& vp, glm::vec3& lightDirection, glm::vec3& lightInte
     if (!renderData) return;
 
     glUseProgram(programID);
-
+    //move();
     glm::mat4 mvp = vp * modelMatrix;
     glm::mat3 normalMatrix = glm::mat3(glm::transpose(glm::inverse(modelMatrix)));
 
@@ -113,4 +113,15 @@ void City::drawModel() {
 }
 
 void City::cleanup() {
+}
+
+void City::move() {
+    if (up) {
+        if (yOffset <= offsetLength) yOffset += offsetSpeed;
+        else up = false;
+    } else {
+        if (yOffset >= -offsetLength) yOffset -= offsetSpeed;
+        else up = true;
+    }
+    updatePosition(position+glm::vec3(0,yOffset,0));
 }

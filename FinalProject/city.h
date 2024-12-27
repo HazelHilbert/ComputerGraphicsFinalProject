@@ -19,6 +19,7 @@ public:
     void render(glm::mat4& vp, glm::vec3& lightDirection, glm::vec3& lightIntensity, glm::vec3& cameraPos);
     void drawModel();
     void cleanup();
+    void move();
 
     glm::vec3 position = glm::vec3(0,0,0);
     glm::mat4 modelMatrix = glm::mat4(1.0f);
@@ -27,6 +28,11 @@ public:
     GltfRenderData* renderData = nullptr;
 
     static GLuint programID;
+
+    float yOffset = 0;
+    bool up = true;
+    float offsetLength = 0.05;
+    float offsetSpeed = 0.0005;
 };
 
 #endif
