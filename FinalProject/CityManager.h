@@ -6,6 +6,7 @@
 #include <vector>
 #include <string>
 #include <glm/glm.hpp>
+#include <tiny_gltf.h>
 
 struct SkyCity {
     City city;
@@ -14,8 +15,6 @@ struct SkyCity {
 
 class CityManager {
 public:
-    bool loadModel(tinygltf::Model &model, const char *filename);
-
     void initialize(int numberOfCities);
 
     void generateCities(int count);
@@ -40,9 +39,16 @@ private:
     const std::string HULL_LOD1 = "../FinalProject/assets/model/hull/hull_LOD1.gltf";
     const std::string HULL_LOD2 = "../FinalProject/assets/model/hull/hull_LOD2.gltf";
 
-    tinygltf::Model cityLOD0, cityLOD1, cityLOD2, hullLOD0, hullLOD1, hullLOD2;
+    GltfRenderData cityLOD0Data, cityLOD1Data, cityLOD2Data;
+    GltfRenderData hullLOD0Data, hullLOD1Data, hullLOD2Data;
 
-    int distanceToCamera(City city, glm::vec3 cameraPos);
+    tinygltf::Model cityLOD0, cityLOD1, cityLOD2;
+    tinygltf::Model hullLOD0, hullLOD1, hullLOD2;
+
+    bool loadModel(tinygltf::Model &model, const char *filename);
+
+    void uploadModel(const tinygltf::Model &model, GltfRenderData &renderData);
+
     float randomFloat(float min, float max);
 };
 
