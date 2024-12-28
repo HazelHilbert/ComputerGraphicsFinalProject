@@ -68,7 +68,7 @@ struct MyBot {
     void drawModelNodes(const std::vector<PrimitiveObject> &primitiveObjects, tinygltf::Model &model, tinygltf::Node &node);
     void drawModel(const std::vector<PrimitiveObject> &primitiveObjects, tinygltf::Model &model);
 
-    void render(glm::mat4 cameraMatrix, glm::vec3 lightPosition, glm::vec3 lightIntensity);
+    void render(glm::mat4& modelMatrix, glm::mat4 cameraMatrix, glm::vec3 lightPosition, glm::vec3 lightIntensity);
     void cleanup();
 };
 

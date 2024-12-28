@@ -17,6 +17,7 @@
 #include <render/shader.h>
 
 #include "CityManager.h"
+#include "FoxManager.h"
 
 
 #define _USE_MATH_DEFINES
@@ -217,8 +218,11 @@ int main(void)
 	// Initialize models
 	// -------------------------------------
 
-	MyBot bot;
-	bot.initialize();
+	//MyBot bot;
+	//bot.initialize();
+
+	FoxManager foxManager;
+	//foxManager.initialize();
 
 	Box building;
 	building.initialize(glm::vec3(10.f,10.f,10.f), glm::vec3(10.f,10.0f,10.0f));
@@ -227,13 +231,13 @@ int main(void)
 	axis.initialize();
 
 	Sky sky;
-	sky.initialize(glm::vec3(0,0,0), glm::vec3(100.f,100.0f,100.0f));
+	sky.initialize(glm::vec3(0,-5,0), glm::vec3(100.f,100.0f,100.0f));
 
 	TerrainManager terrainM;
 	terrainM.initialize(eye_center);
 
 	CityManager cityManager;
-	cityManager.initialize(20);
+	//cityManager.initialize(20);
 
 	// -------------------------------------
 	// -------------------------------------
@@ -261,7 +265,7 @@ int main(void)
 
 		if (playAnimation) {
 			time += deltaTime * playbackSpeed;
-			bot.update(time);
+			foxManager.update(time);
 		}
 
 		// Rendering
@@ -284,15 +288,18 @@ int main(void)
 		axis.render(vp);
 		//building.render(vp);
 
+
 		// animations need to be rendered right before terrain because some states are set and not properly reset
-		if (playAnimation) bot.render(vp, lightDirection, lightIntensity);
+		if (playAnimation) {
+			foxManager.render(vp, lightDirection, lightIntensity);
+		}
 		glEnable(GL_DEPTH_TEST);
 
 
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		terrainM.render(vp, lightSpaceMatrix, lightDirection, lightIntensity, eye_center);
-		cityManager.render(vp,lightDirection, lightIntensity, eye_center);
+		//cityManager.render(vp,lightDirection, lightIntensity, eye_center);
 		glDisable(GL_BLEND);
 
 
@@ -320,7 +327,7 @@ int main(void)
 
 	// Clean up
 	axis.cleanup();
-	bot.cleanup();
+	foxManager.cleanup();
 	building.cleanup();
 	sky.cleanup();
 	terrainM.cleanup();

@@ -44,8 +44,9 @@ std::future<TerrainData> Terrain::generateTerrainAsync(int width, int depth, flo
         // Perlin noise parameters
         float scale = 0.02f; // Controls the frequency of the noise
         int octaves = 6;     // Number of layers of noise
-        float persistence = 0.5f; // Amplitude multiplier for each octave
+        float persistence = 0.4f; // Amplitude multiplier for each octave
         float lacunarity = 2.0f;  // Frequency multiplier for each octave
+
 
         for (int z = 0; z <= depth; ++z) {
             for (int x = 0; x <= width; ++x) {

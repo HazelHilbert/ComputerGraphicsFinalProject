@@ -51,7 +51,7 @@ void Sky::initialize(glm::vec3 position, glm::vec3 scale) {
 	mvpMatrixID = glGetUniformLocation(programID, "MVP");
 
 	// Load Texture
-	std::string filePath = "../FinalProject/assets/textures/sky.png";
+	std::string filePath = "../FinalProject/assets/textures/skybox.png";
 	textureID = LoadTextureTileBox(filePath.c_str());
 
 	// Get a handle for our "textureSampler" uniform

@@ -572,27 +572,22 @@ void MyBot::drawModel(const std::vector<PrimitiveObject>& primitiveObjects,
 	}
 }
 
-void MyBot::render(glm::mat4 cameraMatrix, glm::vec3 lightPosition, glm::vec3 lightIntensity) {
+void MyBot::render(glm::mat4& modelMatrix, glm::mat4 cameraMatrix, glm::vec3 lightPosition, glm::vec3 lightIntensity) {
 	glUseProgram(animationProgramID);
 
-	// Set camera
-	glm::mat4 mvp = cameraMatrix;
-	glUniformMatrix4fv(mvpMatrixID, 1, GL_FALSE, &mvp[0][0]);
+	// Compute MVP matrix
+	glm::mat4 mvp = cameraMatrix * modelMatrix;
+	glUniformMatrix4fv(mvpMatrixID, 1, GL_FALSE, glm::value_ptr(mvp));
 
-	// -----------------------------------------------------------------
-	// TODO: Set animation data for linear blend skinning in shader
-	// -----------------------------------------------------------------
-
-	const std::vector<glm::mat4> &jointMatrices = skinObjects[0].jointMatrices;
+	// Set joint matrices for skinning
+	const std::vector<glm::mat4>& jointMatrices = skinObjects[0].jointMatrices;
 	glUniformMatrix4fv(jointMatricesID, jointMatrices.size(), GL_FALSE, glm::value_ptr(jointMatrices[0]));
 
-	// -----------------------------------------------------------------
+	// Set lighting information
+	glUniform3fv(lightPositionID, 1, glm::value_ptr(lightPosition));
+	glUniform3fv(lightIntensityID, 1, glm::value_ptr(lightIntensity));
 
-	// Set light data
-	glUniform3fv(lightPositionID, 1, &lightPosition[0]);
-	glUniform3fv(lightIntensityID, 1, &lightIntensity[0]);
-
-	// Draw the GLTF model
+	// Draw the model
 	drawModel(primitiveObjects, model);
 }
 

@@ -40,6 +40,8 @@ add_executable(scene
 		FinalProject/CityManager.h
 		FinalProject/city.cpp
 		FinalProject/city.h
+		FinalProject/FoxManager.cpp
+		FinalProject/FoxManager.h
 )
 target_link_libraries(scene
 	${OPENGL_LIBRARY}
