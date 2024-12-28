@@ -152,8 +152,6 @@ void CityManager::render(glm::mat4& vp, glm::vec3 lightDirection, glm::vec3 ligh
 
         float distance = glm::distance(oldPosition, cameraPos);
 
-        glm::vec3 LODCameraPos = glm::vec3(0);
-
         // LOD2
         if (distance > LOD1Radius) {
             skyCity.city.renderData = &cityLOD2Data;
@@ -170,12 +168,10 @@ void CityManager::render(glm::mat4& vp, glm::vec3 lightDirection, glm::vec3 ligh
         else {
             skyCity.city.renderData = &cityLOD0Data;
             skyCity.hull.renderData = &hullLOD0Data;
-            LODCameraPos = cameraPos;
         }
 
-
-        skyCity.city.render(vp, lightDirection, lightIntensity, LODCameraPos);
-        skyCity.hull.render(vp, lightDirection, lightIntensity, LODCameraPos);
+        skyCity.city.render(vp, lightDirection, lightIntensity, cameraPos);
+        skyCity.hull.render(vp, lightDirection, lightIntensity, cameraPos);
     }
 }
 

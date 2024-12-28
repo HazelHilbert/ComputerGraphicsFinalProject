@@ -229,11 +229,6 @@ int main(void)
 	Sky sky;
 	sky.initialize(glm::vec3(0,0,0), glm::vec3(100.f,100.0f,100.0f));
 
-	Terrain terrain;
-	terrain.initialize(200,200,30);
-	Terrain terrain2;
-	terrain2.initialize(200,200,30, 200, 0);
-
 	TerrainManager terrainM;
 	terrainM.initialize(eye_center);
 
@@ -288,20 +283,6 @@ int main(void)
 
 		axis.render(vp);
 		//building.render(vp);
-		/*
-		city0.render(vp, lightPos, lightIntensity);
-		hull0.render(vp, lightPos, lightIntensity);
-		city1.render(vp, lightPos, lightIntensity);
-		hull1.render(vp, lightPos, lightIntensity);
-		city2.render(vp, lightPos, lightIntensity);
-		hull2.render(vp, lightPos, lightIntensity);
-*/
-
-		//hull0.render(vp, lightPos, lightIntensity);
-
-
-		//terrain.render(vp, lightSpaceMatrix, lightDirection, lightIntensity, eye_center);
-		//terrain2.render(vp, lightSpaceMatrix, lightDirection, lightIntensity);
 
 		// animations need to be rendered right before terrain because some states are set and not properly reset
 		if (playAnimation) bot.render(vp, lightPos, lightIntensity);
@@ -311,9 +292,9 @@ int main(void)
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		terrainM.render(vp, lightSpaceMatrix, lightDirection, lightIntensity, eye_center);
+		cityManager.render(vp,lightDirection, lightIntensity, eye_center);
 		glDisable(GL_BLEND);
 
-		cityManager.render(vp,lightDirection, lightIntensity, eye_center);
 
 
 		// FPS tracking
@@ -342,9 +323,8 @@ int main(void)
 	bot.cleanup();
 	building.cleanup();
 	sky.cleanup();
-	terrain.cleanup();
-	terrain2.cleanup();
 	terrainM.cleanup();
+	cityManager.cleanup();
 
 	// Close OpenGL window and terminate GLFW
 	glfwTerminate();
@@ -354,7 +334,7 @@ int main(void)
 
 static void key_callback(GLFWwindow *window, int key, int scancode, int action, int mode)
 {
-	const float moveSpeed = 30.0f;
+	const float moveSpeed = 20.0f;
 
 	if (key == GLFW_KEY_C && action == GLFW_PRESS) {
 		glm::vec3 lightPos = -lightDirection * 200.0f; // Position the light far away in the opposite direction

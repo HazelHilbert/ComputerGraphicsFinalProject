@@ -20,8 +20,8 @@ const int PCF_SIZE = 3;
 const vec3 fogColor = vec3(0.71, 0.72, 0.73); // Gray fog
 const float fogDensity = 0.003;            // Adjust for thickness
 // Linear fog parameters
-float fogStart = 600.0; // Distance where fog starts
-float fogEnd = 1250.0;   // (max 1250.0) Distance where fog fully obscures
+//float fogStart = 600.0; // Distance where fog starts
+//float fogEnd = 1250.0;   // (max 1250.0) Distance where fog fully obscures
 
 
 out vec4 finalColor;
@@ -31,7 +31,18 @@ void main()
     // --- Fog Calculation ---
     // Compute distance from camera to fragment
     float distance = length(fragPos.xz - cameraPos.xz);
-    float hight = length(fragPos.y - cameraPos.y);
+    float height = length(fragPos.y - cameraPos.y);
+
+
+    float heightStart = 20.0;
+    float heightEnd = 200.0;
+    float fogEndAtLowHeight = 1250.0;
+    float fogEndAtHighHeight = 2000.0;
+
+    float fogEnd = 1250.0; //mix(fogEndAtLowHeight, fogEndAtHighHeight, clamp((height - heightStart) / (heightEnd - heightStart), 0.0, 1.0));
+
+    float fogStart = fogEnd - 400;
+
     //distance -= hight;
 
     //float fogFactor = exp(-fogDensity * distance);
@@ -53,7 +64,7 @@ void main()
 
     // Percentage-Closer Filtering (PCF)
     float shadow = 0.0;
-    vec2 texelSize = 1.0 / vec2(2048,1563); // TODO: pass depth map size
+    vec2 texelSize = 1.0 / vec2(2048,1536); // TODO: pass depth map size
     for(int x = -PCF_SIZE; x <= PCF_SIZE; ++x) {
         for(int y = -PCF_SIZE; y <= PCF_SIZE; ++y) {
             vec2 offset = vec2(float(x), float(y)) * texelSize;
@@ -70,11 +81,8 @@ void main()
     float theta = max(dot(normal, -lightDirection), 0.0);
     vec3 tint = vec3(112, 69, 0) * 1.5 / vec3(255.0);
     vec3 texureColor = texture(textureSampler, uv).rgb;
-    vec3 tintedTexureColor =  texureColor;// * tint;
+    vec3 tintedTexureColor =  texureColor; // * tint;
     vec3 lambertianColor = shadow * theta * normalize(lightIntensity) * tintedTexureColor;
-
-
-
 
     vec3 colorWithFog = mix(fogColor, lambertianColor, fogFactor);
 
@@ -86,5 +94,5 @@ void main()
     if (fogFactor > 0.1) fogFactor = 1.0;
     finalColor = vec4(colorWithFog, 1);
 
-    //finalColor = vec4(shadow, 0, 0, 1);
+    //finalColor = vec4(vec3(shadow), 1);
 }
