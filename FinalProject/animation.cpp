@@ -322,7 +322,7 @@ bool MyBot::loadModel(tinygltf::Model &model, const char *filename) {
 
 void MyBot::initialize() {
 	// Modify your path if needed
-	if (!loadModel(model, "../FinalProject/assets/model/bot/bot.gltf")) {
+	if (!loadModel(model, "../FinalProject/assets/model/fox/fox.gltf")){ //"../FinalProject/assets/model/bot/bot.gltf")) {
 		return;
 	}
 
@@ -347,82 +347,141 @@ void MyBot::initialize() {
 	jointMatricesID = glGetUniformLocation(animationProgramID, "jointMatrices");
 	lightPositionID = glGetUniformLocation(animationProgramID, "lightPosition");
 	lightIntensityID = glGetUniformLocation(animationProgramID, "lightIntensity");
+
+	// Set the sampler to texture unit 0
+	glUseProgram(animationProgramID);
+	GLint diffuseTextureLoc = glGetUniformLocation(animationProgramID, "diffuseTexture");
+	glUniform1i(diffuseTextureLoc, 0); // Texture unit 0
 }
+
 
 void MyBot::bindMesh(std::vector<PrimitiveObject> &primitiveObjects,
-			tinygltf::Model &model, tinygltf::Mesh &mesh) {
+                     tinygltf::Model &model, tinygltf::Mesh &mesh) {
 
-	std::map<int, GLuint> vbos;
-	for (size_t i = 0; i < model.bufferViews.size(); ++i) {
-		const tinygltf::BufferView &bufferView = model.bufferViews[i];
+    std::map<int, GLuint> vbos;
 
-		int target = bufferView.target;
+    // Load bufferViews into VBOs
+    for (size_t i = 0; i < model.bufferViews.size(); ++i) {
+        const tinygltf::BufferView &bufferView = model.bufferViews[i];
+        int target = bufferView.target;
 
-		if (bufferView.target == 0) {
-			// The bufferView with target == 0 in our model refers to
-			// the skinning weights, for 25 joints, each 4x4 matrix (16 floats), totaling to 400 floats or 1600 bytes.
-			// So it is considered safe to skip the warning.
-			//std::cout << "WARN: bufferView.target is zero" << std::endl;
-			continue;
-		}
+        if (target == 0) {
+            // Skip bufferViews with target 0 (unused or special)
+            continue;
+        }
 
-		const tinygltf::Buffer &buffer = model.buffers[bufferView.buffer];
-		GLuint vbo;
-		glGenBuffers(1, &vbo);
-		glBindBuffer(target, vbo);
-		glBufferData(target, bufferView.byteLength,
-					&buffer.data.at(0) + bufferView.byteOffset, GL_STATIC_DRAW);
+        const tinygltf::Buffer &buffer = model.buffers[bufferView.buffer];
+        GLuint vbo;
+        glGenBuffers(1, &vbo);
+        glBindBuffer(target, vbo);
+        glBufferData(target, bufferView.byteLength,
+                    &buffer.data.at(bufferView.byteOffset), GL_STATIC_DRAW);
 
-		vbos[i] = vbo;
-	}
+        vbos[i] = vbo;
+    }
 
-	// Each mesh can contain several primitives (or parts), each we need to
-	// bind to an OpenGL vertex array object
-	for (size_t i = 0; i < mesh.primitives.size(); ++i) {
+    // Process each primitive in the mesh
+    for (size_t i = 0; i < mesh.primitives.size(); ++i) {
+        const tinygltf::Primitive &primitive = mesh.primitives[i];
+        const tinygltf::Material &material = model.materials[primitive.material];
 
-		tinygltf::Primitive primitive = mesh.primitives[i];
-		tinygltf::Accessor indexAccessor = model.accessors[primitive.indices];
+        GLuint vao;
+        glGenVertexArrays(1, &vao);
+        glBindVertexArray(vao);
 
-		GLuint vao;
-		glGenVertexArrays(1, &vao);
-		glBindVertexArray(vao);
+        // Bind vertex attributes
+        for (const auto &attrib : primitive.attributes) {
+            const tinygltf::Accessor &accessor = model.accessors[attrib.second];
+            const tinygltf::BufferView &bufferView = model.bufferViews[accessor.bufferView];
+            int byteStride = accessor.ByteStride(bufferView);
 
-		for (auto &attrib : primitive.attributes) {
-			tinygltf::Accessor accessor = model.accessors[attrib.second];
-			int byteStride =
-				accessor.ByteStride(model.bufferViews[accessor.bufferView]);
-			glBindBuffer(GL_ARRAY_BUFFER, vbos[accessor.bufferView]);
+            glBindBuffer(GL_ARRAY_BUFFER, vbos[accessor.bufferView]);
 
-			int size = 1;
-			if (accessor.type != TINYGLTF_TYPE_SCALAR) {
-				size = accessor.type;
-			}
+            int size = accessor.type == TINYGLTF_TYPE_SCALAR ? 1 : accessor.type;
+            int attribLocation = -1;
+            if (attrib.first == "POSITION") attribLocation = 0;
+            else if (attrib.first == "NORMAL") attribLocation = 1;
+            else if (attrib.first == "TEXCOORD_0") attribLocation = 2;
+            else if (attrib.first == "JOINTS_0") attribLocation = 3;
+            else if (attrib.first == "WEIGHTS_0") attribLocation = 4;
 
-			int vaa = -1;
-			if (attrib.first.compare("POSITION") == 0) vaa = 0;
-			if (attrib.first.compare("NORMAL") == 0) vaa = 1;
-			if (attrib.first.compare("TEXCOORD_0") == 0) vaa = 2;
-			if (attrib.first.compare("JOINTS_0") == 0) vaa = 3;
-			if (attrib.first.compare("WEIGHTS_0") == 0) vaa = 4;
-			if (vaa > -1) {
-				glEnableVertexAttribArray(vaa);
-				glVertexAttribPointer(vaa, size, accessor.componentType,
-									accessor.normalized ? GL_TRUE : GL_FALSE,
-									byteStride, BUFFER_OFFSET(accessor.byteOffset));
-			} else {
-				std::cout << "vaa missing: " << attrib.first << std::endl;
-			}
-		}
+            if (attribLocation >= 0) {
+                glEnableVertexAttribArray(attribLocation);
+                glVertexAttribPointer(
+                    attribLocation,
+                    size,
+                    accessor.componentType,
+                    accessor.normalized ? GL_TRUE : GL_FALSE,
+                    byteStride,
+                    BUFFER_OFFSET(accessor.byteOffset)
+                );
+            } else {
+                std::cout << "Attribute location missing for: " << attrib.first << std::endl;
+            }
+        }
 
-		// Record VAO for later use
-		PrimitiveObject primitiveObject;
-		primitiveObject.vao = vao;
-		primitiveObject.vbos = vbos;
-		primitiveObjects.push_back(primitiveObject);
+        // Handle indices
+        GLuint indexVBO = 0;
+        if (primitive.indices >= 0) {
+            const tinygltf::Accessor &indexAccessor = model.accessors[primitive.indices];
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vbos[indexAccessor.bufferView]);
+        }
 
-		glBindVertexArray(0);
-	}
+        // Create PrimitiveObject
+        PrimitiveObject primitiveObject;
+        primitiveObject.vao = vao;
+        primitiveObject.vbos = vbos;
+        primitiveObject.textureID = 0; // Default to 0 (no texture)
+
+        // Load the diffuse texture if available
+        if (material.values.find("baseColorTexture") != material.values.end()) {
+            int textureIndex = material.values.at("baseColorTexture").TextureIndex();
+            if (textureIndex >= 0 && textureIndex < model.textures.size()) {
+                const tinygltf::Texture &tex = model.textures[textureIndex];
+                const tinygltf::Image &image = model.images[tex.source];
+
+                glGenTextures(1, &primitiveObject.textureID);
+                glBindTexture(GL_TEXTURE_2D, primitiveObject.textureID);
+
+                GLenum format = GL_RGB;
+                if (image.component == 1) format = GL_RED;
+                else if (image.component == 2) format = GL_RG;
+                else if (image.component == 3) format = GL_RGB;
+                else if (image.component == 4) format = GL_RGBA;
+
+                GLenum internalFormat = GL_RGBA;
+                if (image.pixel_type == TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE) {
+                    if (image.component == 3) internalFormat = GL_RGB;
+                    else if (image.component == 4) internalFormat = GL_RGBA;
+                }
+
+                glTexImage2D(
+                    GL_TEXTURE_2D,
+                    0,
+                    internalFormat,
+                    image.width,
+                    image.height,
+                    0,
+                    format,
+                    GL_UNSIGNED_BYTE,
+                    &image.image.at(0)
+                );
+
+                glGenerateMipmap(GL_TEXTURE_2D);
+
+                // Set texture parameters
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            }
+        }
+
+        primitiveObjects.push_back(primitiveObject);
+        glBindVertexArray(0);
+    }
 }
+
 
 void MyBot::bindModelNodes(std::vector<PrimitiveObject> &primitiveObjects,
 					tinygltf::Model &model,
@@ -452,27 +511,47 @@ std::vector<MyBot::PrimitiveObject> MyBot::bindModel(tinygltf::Model &model) {
 }
 
 void MyBot::drawMesh(const std::vector<PrimitiveObject> &primitiveObjects,
-			tinygltf::Model &model, tinygltf::Mesh &mesh) {
+					tinygltf::Model &model, tinygltf::Mesh &mesh) {
 
-	for (size_t i = 0; i < mesh.primitives.size(); ++i)
-	{
-		GLuint vao = primitiveObjects[i].vao;
-		std::map<int, GLuint> vbos = primitiveObjects[i].vbos;
+	for (size_t i = 0; i < mesh.primitives.size(); ++i) {
+		const PrimitiveObject &primitiveObject = primitiveObjects[i];
+		glBindVertexArray(primitiveObject.vao);
 
-		glBindVertexArray(vao);
+		// Bind the diffuse texture
+		if (primitiveObject.textureID != 0) {
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, primitiveObject.textureID);
+		} else {
+			// Bind a default texture or unbind if no texture is present
+			glBindTexture(GL_TEXTURE_2D, 0);
+		}
 
-		tinygltf::Primitive primitive = mesh.primitives[i];
-		tinygltf::Accessor indexAccessor = model.accessors[primitive.indices];
+		// Set the sampler uniform to texture unit 0
+		// It's efficient to do this once in initialize, but ensuring it's correct here
+		glUniform1i(glGetUniformLocation(animationProgramID, "diffuseTexture"), 0);
 
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vbos.at(indexAccessor.bufferView));
+		// Bind index buffer and draw
+		const tinygltf::Primitive &primitive = mesh.primitives[i];
+		if (primitive.indices >= 0) {
+			const tinygltf::Accessor &indexAccessor = model.accessors[primitive.indices];
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, primitiveObject.vbos.at(indexAccessor.bufferView));
+			GLenum mode = GL_TRIANGLES; // Default to triangles
+			if (primitive.mode != TINYGLTF_MODE_TRIANGLES) {
+				mode = primitive.mode;
+			}
 
-		glDrawElements(primitive.mode, indexAccessor.count,
-					indexAccessor.componentType,
-					BUFFER_OFFSET(indexAccessor.byteOffset));
+			glDrawElements(
+				mode,
+				indexAccessor.count,
+				indexAccessor.componentType,
+				BUFFER_OFFSET(indexAccessor.byteOffset)
+			);
+		}
 
 		glBindVertexArray(0);
 	}
 }
+
 
 void MyBot::drawModelNodes(const std::vector<PrimitiveObject>& primitiveObjects,
 					tinygltf::Model &model, tinygltf::Node &node) {

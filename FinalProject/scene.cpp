@@ -285,7 +285,7 @@ int main(void)
 		//building.render(vp);
 
 		// animations need to be rendered right before terrain because some states are set and not properly reset
-		if (playAnimation) bot.render(vp, lightPos, lightIntensity);
+		if (playAnimation) bot.render(vp, lightDirection, lightIntensity);
 		glEnable(GL_DEPTH_TEST);
 
 

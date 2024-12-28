@@ -14,6 +14,7 @@ struct MyBot {
     struct PrimitiveObject {
         GLuint vao;
         std::map<int, GLuint> vbos;
+        GLuint textureID;
     };
 
     struct SkinObject {
