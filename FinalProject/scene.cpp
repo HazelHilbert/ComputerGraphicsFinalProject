@@ -282,7 +282,7 @@ int main(void)
 		sky.render(vp_skybox);
 		glDepthMask(GL_TRUE);
 
-		axis.render(vp);
+		//axis.render(vp);
 
 		// animations need to be rendered right before terrain because some states are set and not properly reset
 		if (playAnimation) {

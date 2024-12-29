@@ -7,6 +7,7 @@
 class FoxManager {
 public:
     MyBot fox;
+    glm::vec3 foxPosition = glm::vec3(0.0f);
     glm::mat4 modelMatrix = glm::mat4(1.0f);
 
     void initialize();
