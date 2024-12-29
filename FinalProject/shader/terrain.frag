@@ -18,11 +18,6 @@ const int PCF_SIZE = 3;
 
 // Define fog parameters
 const vec3 fogColor = vec3(0.71, 0.72, 0.73); // Gray fog
-const float fogDensity = 0.003;            // Adjust for thickness
-// Linear fog parameters
-//float fogStart = 600.0; // Distance where fog starts
-//float fogEnd = 1250.0;   // (max 1250.0) Distance where fog fully obscures
-
 
 out vec4 finalColor;
 
@@ -33,23 +28,12 @@ void main()
     float distance = length(fragPos.xz - cameraPos.xz);
     float height = length(fragPos.y - cameraPos.y);
 
-
-    float heightStart = 20.0;
-    float heightEnd = 200.0;
-    float fogEndAtLowHeight = 1250.0;
-    float fogEndAtHighHeight = 2000.0;
-
-    float fogEnd = 1250.0; //mix(fogEndAtLowHeight, fogEndAtHighHeight, clamp((height - heightStart) / (heightEnd - heightStart), 0.0, 1.0));
-
+    float fogEnd = 1200.0 + height*2;
+    fogEnd = clamp(fogEnd, 1200,2000);
     float fogStart = fogEnd - 400;
 
-    //distance -= hight;
-
-    //float fogFactor = exp(-fogDensity * distance);
     float fogFactor = 1 - ((distance - fogStart) / (fogEnd - fogStart));
-
     fogFactor = clamp(fogFactor, 0.0, 1.0);
-
     if (fogFactor < 0.1) {
         finalColor = vec4(vec3(1, 0, 0), 0);
         return;
@@ -79,13 +63,11 @@ void main()
 
     // lighting, tone mapping, gamma correction
     float theta = max(dot(normal, -lightDirection), 0.0);
-    vec3 tint = vec3(112, 69, 0) * 1.5 / vec3(255.0);
     vec3 texureColor = texture(textureSampler, uv).rgb;
-    vec3 tintedTexureColor =  texureColor; // * tint;
+    vec3 tintedTexureColor =  texureColor * 2; // make texture brighter
     vec3 lambertianColor = shadow * theta * normalize(lightIntensity) * tintedTexureColor;
 
     vec3 colorWithFog = mix(fogColor, lambertianColor, fogFactor);
-
 
     vec3 toneColor = lambertianColor / (1.0 + lambertianColor);
     vec3 sRGB = pow(toneColor, vec3(1.0 / gamma));

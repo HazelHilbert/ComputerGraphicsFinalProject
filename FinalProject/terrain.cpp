@@ -153,7 +153,7 @@ void Terrain::initialize(int width, int depth, float maxHeight, float posX, floa
     }
 
     // UV initialization
-    float tilingFactor = 20.0f;
+    float tilingFactor = 25.0f;
     for (int z = 0; z <= depth; ++z) {
         for (int x = 0; x <= width; ++x) {
             uvs.emplace_back(glm::vec2(
@@ -211,7 +211,7 @@ void Terrain::initialize(int width, int depth, float maxHeight, float posX, floa
         createTerrainProgramIDs(programID, depthProgramID);
     }
 
-    std::string filePath = "../FinalProject/assets/textures/grass.jpg";
+    std::string filePath = "../FinalProject/assets/textures/green_grass.jpg";
     textureID = LoadTextureTileBox(filePath.c_str());
     textureSamplerID = glGetUniformLocation(programID,"textureSampler");
 

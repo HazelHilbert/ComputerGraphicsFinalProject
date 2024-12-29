@@ -222,10 +222,7 @@ int main(void)
 	//bot.initialize();
 
 	FoxManager foxManager;
-	//foxManager.initialize();
-
-	Box building;
-	building.initialize(glm::vec3(10.f,10.f,10.f), glm::vec3(10.f,10.0f,10.0f));
+	foxManager.initialize();
 
 	AxisXYZ axis;
 	axis.initialize();
@@ -237,7 +234,7 @@ int main(void)
 	terrainM.initialize(eye_center);
 
 	CityManager cityManager;
-	//cityManager.initialize(20);
+	cityManager.initialize(30);
 
 	// -------------------------------------
 	// -------------------------------------
@@ -286,8 +283,6 @@ int main(void)
 		glDepthMask(GL_TRUE);
 
 		axis.render(vp);
-		//building.render(vp);
-
 
 		// animations need to be rendered right before terrain because some states are set and not properly reset
 		if (playAnimation) {
@@ -299,7 +294,7 @@ int main(void)
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		terrainM.render(vp, lightSpaceMatrix, lightDirection, lightIntensity, eye_center);
-		//cityManager.render(vp,lightDirection, lightIntensity, eye_center);
+		cityManager.render(vp,lightDirection, lightIntensity, eye_center);
 		glDisable(GL_BLEND);
 
 
@@ -328,7 +323,6 @@ int main(void)
 	// Clean up
 	axis.cleanup();
 	foxManager.cleanup();
-	building.cleanup();
 	sky.cleanup();
 	terrainM.cleanup();
 	cityManager.cleanup();

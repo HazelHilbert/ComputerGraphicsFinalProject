@@ -9,8 +9,8 @@ uniform vec3 lightIntensity; // Light intensity (ambient + diffuse + specular)
 uniform vec3 cameraPos; // Camera position for specular calculations
 uniform sampler2D modelTexture;
 
-float fogStart = 800.0;
-float fogEnd = 1400.0;
+float fogStart = 1000.0;
+float fogEnd = 2000.0;
 
 out vec4 fragColor;
 

@@ -26,9 +26,9 @@ public:
 private:
     std::vector<SkyCity> cities;
 
-    const float LOD0Radius = 500;
+    const float LOD0Radius = 450;
     const float LOD1Radius = 1000;
-    const float LOD2Radius = 1500;
+    const float LOD2Radius = 2000;
     const float viewRadius = LOD2Radius;
 
     const std::string CITY_LOD0 = "../FinalProject/assets/model/city/city_LOD0.gltf";
